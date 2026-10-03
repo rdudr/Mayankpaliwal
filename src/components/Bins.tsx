@@ -18,9 +18,10 @@ function Folder({ color, open }: { color: string; open: boolean }) {
       <path d="M6 14a6 6 0 0 1 6-6h30l8 9h58a6 6 0 0 1 6 6v5H6z" fill={color} opacity=".85" />
       <motion.path
         d="M6 26h108v52a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6z"
-        fill="#2e2e33"
+        fill="#ffffff"
         stroke={color}
-        strokeOpacity=".35"
+        strokeOpacity=".55"
+        strokeWidth="2"
         animate={{ skewX: open ? -8 : 0, y: open ? 4 : 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 22 }}
         style={{ transformOrigin: '60px 84px' }}
@@ -41,8 +42,8 @@ export default function Bins() {
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-line bg-panel text-ink shadow-[0_40px_90px_-40px_rgba(9,20,52,.6)]">
-      <div className="mono flex items-center justify-between border-b border-line px-4 py-3 text-xs text-dim sm:px-5">
+    <div className="overflow-hidden rounded-[20px] border border-[#ece4d8] bg-white text-navy shadow-[0_30px_70px_-40px_rgba(9,20,52,.35)]">
+      <div className="mono flex items-center justify-between border-b border-[#efe8dd] px-4 py-3 text-xs text-slate sm:px-5">
         <span>Project: Mayank_Paliwal.prproj</span>
         <span>{total} items</span>
       </div>
@@ -60,15 +61,15 @@ export default function Bins() {
               onClick={() => pick(c)}
               onPointerEnter={() => fine && pick(c)}
               className={cx(
-                'group flex flex-col items-center gap-2 rounded-lg border p-3 transition-colors sm:p-4',
-                on ? 'border-line bg-panel-2' : 'border-transparent hover:bg-panel-2/60',
+                'group flex flex-col items-center gap-2 rounded-[13px] border-2 p-3 transition-colors sm:p-4',
+                on ? 'border-orange bg-[#fff4ea]' : 'border-transparent hover:bg-cream',
               )}
             >
               <div className="w-16 sm:w-24">
                 <Folder color={m.color} open={on} />
               </div>
-              <span className={cx('mono text-xs sm:text-sm', on ? 'text-ink' : 'text-dim')}>{m.bin}</span>
-              <span className="mono text-[11px] text-faint">{byClient(c).length} items</span>
+              <span className={cx('mono text-xs sm:text-sm', on ? 'font-medium text-navy' : 'text-slate')}>{m.bin}</span>
+              <span className="mono text-[11px] text-slate/70">{byClient(c).length} items</span>
             </button>
           )
         })}
@@ -103,7 +104,7 @@ function Fan({ client }: { client: Client }) {
   const stepR = Math.min(7, 36 / Math.max(n, 1))
 
   return (
-    <div ref={stage} className="relative border-t border-line bg-[#202024]" style={{ height: cardW * 0.5625 + 150 }}>
+    <div ref={stage} className="relative border-t border-[#efe8dd] bg-[radial-gradient(ellipse_at_50%_80%,#fbe3cc_0%,#f5efe6_60%)]" style={{ height: cardW * 0.5625 + 150 }}>
       <AnimatePresence mode="popLayout">
         {items.map((p, i) => {
           const d = i - mid
@@ -121,10 +122,10 @@ function Fan({ client }: { client: Client }) {
               whileFocus={{ y: -18, rotate: 0, scale: 1.08, zIndex: 50 }}
               transition={{ type: 'spring', stiffness: 260, damping: 24, delay: i * 0.035 }}
             >
-              <div className="overflow-hidden rounded-md border-2 bg-panel shadow-[0_18px_40px_-12px_rgba(0,0,0,.8)]" style={{ borderColor: color }}>
+              <div className="overflow-hidden rounded-md border-2 bg-white shadow-[0_18px_36px_-14px_rgba(9,20,52,.45)]" style={{ borderColor: color }}>
                 <Img src={p.thumb} alt="" className="aspect-video w-full object-cover" />
               </div>
-              <span className="mono mt-2 block text-center text-[11px] text-dim">{p.episode ?? p.id.toUpperCase()}</span>
+              <span className="mono mt-2 block text-center text-[11px] text-slate">{p.episode ?? p.id.toUpperCase()}</span>
             </motion.button>
           )
         })}
@@ -140,7 +141,7 @@ function ClipList({ client }: { client: Client }) {
     <AnimatePresence mode="wait">
       <motion.ul
         key={client}
-        className="grid grid-cols-1 gap-3 border-t border-line p-3 sm:grid-cols-2 sm:p-5 lg:grid-cols-3 xl:grid-cols-4"
+        className="grid grid-cols-1 gap-3 border-t border-[#efe8dd] p-3 sm:grid-cols-2 sm:p-5 lg:grid-cols-3 xl:grid-cols-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -160,7 +161,7 @@ function ClipRow({ p, i }: { p: ProjectView; i: number }) {
     <motion.li initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 12) * 0.03 }}>
       <button
         onClick={() => open(p)}
-        className="group flex w-full gap-3 rounded-lg border border-transparent p-2 text-left transition-colors hover:border-line hover:bg-panel-2"
+        className="group flex w-full gap-3 rounded-lg border border-transparent p-2 text-left transition-colors hover:border-[#efe8dd] hover:bg-cream"
       >
         <div className="relative w-32 shrink-0 overflow-hidden rounded-md bg-black sm:w-28">
           <Img src={p.thumb} alt="" className="aspect-video w-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -169,11 +170,11 @@ function ClipRow({ p, i }: { p: ProjectView; i: number }) {
           </span>
         </div>
         <div className="min-w-0">
-          <p className="mono flex items-center gap-1.5 text-[10px] text-faint">
+          <p className="mono flex items-center gap-1.5 text-[10px] text-slate">
             <span className="size-1.5 rounded-[2px]" style={{ background: p.meta.color }} aria-hidden />
             {p.episode ?? p.clipName}
           </p>
-          <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-ink">{p.title}</p>
+          <p className="mt-0.5 line-clamp-2 text-[13px] font-medium leading-snug text-navy">{p.title}</p>
         </div>
       </button>
     </motion.li>

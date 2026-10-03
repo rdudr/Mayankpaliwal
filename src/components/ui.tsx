@@ -76,7 +76,7 @@ export function Modal({ open, onClose, label, children, className }: { open: boo
             role="dialog"
             aria-modal="true"
             aria-label={label}
-            className={cx('relative max-h-full w-full overflow-auto rounded-xl border border-line bg-panel shadow-2xl', className)}
+            className={cx('relative max-h-full w-full overflow-auto rounded-[20px] border border-[#ece4d8] bg-white shadow-2xl', className)}
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.12 } }}

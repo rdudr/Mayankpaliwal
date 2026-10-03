@@ -27,7 +27,7 @@ function ProjectBody({ p, onClose }: { p: ProjectView; onClose: () => void }) {
   const external = p.link?.startsWith('http') ? p.link : ''
 
   return (
-    <div className="text-ink">
+    <div className="text-navy">
       <div className="relative flex aspect-video max-h-[70svh] w-full items-center justify-center bg-black">
         {p.yt && loaded ? (
           <iframe
@@ -54,14 +54,14 @@ function ProjectBody({ p, onClose }: { p: ProjectView; onClose: () => void }) {
 
       <div className="grid gap-5 p-5 sm:p-7 md:grid-cols-[1fr_auto] md:items-end">
         <div className="min-w-0">
-          <p className="mono mb-2 flex items-center gap-2 text-xs text-dim">
+          <p className="mono mb-2 flex items-center gap-2 text-xs text-slate">
             <Dot color={p.meta.color} /> {p.meta.label}
             {p.episode && <> · {p.episode}</>}
           </p>
           <h3 className="text-2xl font-semibold leading-snug sm:text-3xl">{p.title}</h3>
-          <p className="mt-2 text-sm text-dim">
+          <p className="mt-2 text-sm text-slate">
             {p.role}
-            {p.result && <> · <span className="text-ink">{p.result}</span></>}
+            {p.result && <> · <span className="text-navy">{p.result}</span></>}
           </p>
         </div>
         {external && (

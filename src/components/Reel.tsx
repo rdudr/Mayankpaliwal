@@ -15,7 +15,7 @@ export function ReelProvider({ children }: { children: ReactNode }) {
   return (
     <ReelCtx.Provider value={{ open }}>
       {children}
-      <Modal open={isOpen} onClose={close} label="Showreel" className="max-w-6xl bg-black">
+      <Modal open={isOpen} onClose={close} label="Showreel" className="max-w-6xl !border-line !bg-black">
         <ReelPlayer onClose={close} />
       </Modal>
     </ReelCtx.Provider>
