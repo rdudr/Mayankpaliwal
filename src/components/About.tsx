@@ -53,7 +53,7 @@ function Avatar() {
 export default function About() {
   const reduced = useReducedMotion()
   return (
-    <section id="about" aria-labelledby="about-title" className="hud relative min-h-[100svh] pb-24 pt-[52svh] text-holo md:pt-28">
+    <section id="about" aria-labelledby="about-title" className="hud relative min-h-full pb-16 pt-[52svh] text-holo md:pt-28">
       <h2 id="about-title" className="sr-only">About {profile.name}</h2>
       <div className="content-width">
         <div className="flex w-full flex-col gap-6 md:max-w-[min(600px,46%)]">

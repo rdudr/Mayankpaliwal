@@ -9,6 +9,10 @@ type Props = GroupProps & {
   typing?: boolean
   wave?: boolean
   still?: boolean
+  /** Both arms thrown up — used while falling into the lab. */
+  armsUp?: boolean
+  /** Clipping planes (e.g. hide everything below the floor while sinking). */
+  clip?: THREE.Plane[]
 }
 
 const SKIN = '#f3c9a0'
@@ -18,19 +22,19 @@ const PANTS = '#2f2f39'
 const SHOE = '#f4f4f4'
 
 /** A chibi "clay" editor built from primitives. Faces +z. */
-export default function Character({ pose, holo, typing, wave, still, ...group }: Props) {
+export default function Character({ pose, holo, typing, wave, still, armsUp, clip, ...group }: Props) {
   const armL = useRef<THREE.Group>(null)
   const armR = useRef<THREE.Group>(null)
   const head = useRef<THREE.Group>(null)
 
   const mats = useMemo(() => {
     if (holo) {
-      const m = new THREE.MeshBasicMaterial({ color: '#5fd2ff', wireframe: true, transparent: true, opacity: 0.85 })
+      const m = new THREE.MeshBasicMaterial({ color: '#5fd2ff', wireframe: true, transparent: true, opacity: 0.85, clippingPlanes: clip })
       return { skin: m, hair: m, shirt: m, pants: m, shoe: m, eye: m }
     }
-    const std = (color: string, roughness = 0.75) => new THREE.MeshStandardMaterial({ color, roughness })
+    const std = (color: string, roughness = 0.75) => new THREE.MeshStandardMaterial({ color, roughness, clippingPlanes: clip })
     return { skin: std(SKIN, 0.6), hair: std(HAIR, 0.85), shirt: std(SHIRT), pants: std(PANTS), shoe: std(SHOE, 0.5), eye: std('#1a1a22', 0.3) }
-  }, [holo])
+  }, [holo, clip])
 
   const seg = holo ? 14 : 24
   const hipY = pose === 'sit' ? 0.55 : 0.66
@@ -42,6 +46,10 @@ export default function Character({ pose, holo, typing, wave, still, ...group }:
     if (typing && armL.current && armR.current) {
       armL.current.rotation.x = -1.45 + Math.sin(t * 14) * 0.05
       armR.current.rotation.x = -1.45 + Math.sin(t * 14 + 1.7) * 0.05
+    }
+    if (armsUp && armL.current && armR.current) {
+      armL.current.rotation.z = -2.7 + Math.sin(t * 9) * 0.25
+      armR.current.rotation.z = 2.7 - Math.sin(t * 9 + 1) * 0.25
     }
     if (wave && armR.current) {
       armR.current.rotation.z = 2.5 + Math.sin(t * 6) * 0.35

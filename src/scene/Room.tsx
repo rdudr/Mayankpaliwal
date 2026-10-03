@@ -1,8 +1,9 @@
+import { ContactShadows } from '@react-three/drei/core/ContactShadows'
 import { RoundedBox } from '@react-three/drei/core/RoundedBox'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import Character from './Character'
+import { backIn, clamp01, trans } from './progress'
 import { drawNote, drawProgram, drawTimeline, makeCanvas } from './textures'
 
 const WOOD = '#d9b07a'
@@ -113,8 +114,37 @@ function Plant(p: JSX.IntrinsicElements['group']) {
   )
 }
 
-export default function Room({ reduced }: { reduced: boolean }) {
+/** The desk chair (exported so the Traveler can sink it through the floor). */
+export function Chair({ clip, ...p }: { clip?: THREE.Plane[] } & JSX.IntrinsicElements['group']) {
+  return (
+    <group {...p}>
+      <RoundedBox args={[0.72, 0.08, 0.66]} radius={0.04} position={[0, 0.62, 0]}>
+        <meshStandardMaterial color={WHITE} roughness={0.7} clippingPlanes={clip ?? null} />
+      </RoundedBox>
+      <RoundedBox args={[0.72, 0.62, 0.08]} radius={0.04} position={[0, 1.0, 0.33]} rotation={[-0.12, 0, 0]}>
+        <meshStandardMaterial color={WHITE} roughness={0.7} clippingPlanes={clip ?? null} />
+      </RoundedBox>
+      {[[-0.3, -0.25], [0.3, -0.25], [-0.3, 0.25], [0.3, 0.25]].map(([x, z], i) => (
+        <mesh key={i} position={[x, 0.3, z]}>
+          <cylinderGeometry args={[0.025, 0.025, 0.6, 8]} />
+          <meshStandardMaterial color="#9a9aa3" roughness={0.3} clippingPlanes={clip ?? null} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+/** Room furniture "bounces out" (back-ease shrink) as he falls, and back in on return. */
+export default function Room() {
   const program = useRef<HTMLImageElement | null>(null)
+  const root = useRef<THREE.Group>(null)
+  useFrame(() => {
+    const g = root.current
+    if (!g) return
+    const k = 1 - backIn(clamp01(trans.value / 0.4))
+    g.visible = k > 0.002
+    g.scale.setScalar(Math.max(k, 0.002))
+  })
   useEffect(() => {
     const img = new Image()
     img.src = '/media/projects/daud/ep04.jpg'
@@ -122,7 +152,8 @@ export default function Room({ reduced }: { reduced: boolean }) {
   }, [])
 
   return (
-    <group>
+    <group ref={root}>
+      <ContactShadows position={[0, 0.001, 0]} opacity={0.35} scale={9} blur={2.4} far={3} frames={1} />
       {/* Rug */}
       {[
         [5.4, 4.4, '#ee9a3c', 0.02],
@@ -171,22 +202,8 @@ export default function Room({ reduced }: { reduced: boolean }) {
         <Mat color="#4fa0e8" />
       </mesh>
 
-      {/* Chair */}
-      <group position={[0, 0, 0.4]}>
-        <RoundedBox args={[0.72, 0.08, 0.66]} radius={0.04} position={[0, 0.62, 0]}>
-          <Mat color={WHITE} />
-        </RoundedBox>
-        <RoundedBox args={[0.72, 0.62, 0.08]} radius={0.04} position={[0, 1.0, 0.33]} rotation={[-0.12, 0, 0]}>
-          <Mat color={WHITE} />
-        </RoundedBox>
-        {[[-0.3, -0.25], [0.3, -0.25], [-0.3, 0.25], [0.3, 0.25]].map(([x, z], i) => (
-          <mesh key={i} position={[x, 0.3, z]}>
-            <cylinderGeometry args={[0.025, 0.025, 0.6, 8]} />
-            <Mat color="#9a9aa3" rough={0.3} />
-          </mesh>
-        ))}
-      </group>
-      <Character pose="sit" typing={!reduced} still={reduced} position={[0, 0.25, 0.3]} rotation={[0, Math.PI, 0]} />
+      <Chair position={[0, 0, 0.4]} />
+      {/* the editor himself lives in Traveler.tsx — he falls from here into the lab */}
 
       {/* Wall pieces, floating like the reference */}
       <group position={[-1.7, 2.75, -1.5]}>

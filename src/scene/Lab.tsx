@@ -3,7 +3,6 @@ import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { profile } from '../content/site'
-import Character from './Character'
 import { drawAppLogo, drawWaveform, makeCanvas, toolLogo, type AppKind } from './textures'
 
 const LAB_WHITE = '#e8f0fa'
@@ -107,13 +106,6 @@ const logoSpots: [number, number, number][] = [
 ]
 
 export default function Lab({ reduced }: { reduced: boolean }) {
-  const holo = useRef<THREE.Group>(null)
-  useFrame(({ clock }) => {
-    if (!holo.current || reduced) return
-    holo.current.rotation.y = clock.elapsedTime * 0.45
-    holo.current.position.y = 0.42 + Math.sin(clock.elapsedTime * 1.2) * 0.05
-  })
-
   const kinds = profile.tools.map((t) => toolLogo[t]).filter(Boolean)
   const pipe = (pts: [number, number, number][]) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p))), 40, 0.07, 10)
 
@@ -153,9 +145,7 @@ export default function Lab({ reduced }: { reduced: boolean }) {
         <Mat color="#c3cfdf" />
       </mesh>
 
-      <group ref={holo} position={[0, 0.42, 0]} scale={1.18}>
-        <Character pose="stand" holo still />
-      </group>
+      {/* the hologram editor is rendered by Traveler.tsx (he falls in from the room) */}
       <Bubbles reduced={reduced} />
       <pointLight position={[0, 1.8, 1.2]} color="#5fd2ff" intensity={10} distance={6} />
 

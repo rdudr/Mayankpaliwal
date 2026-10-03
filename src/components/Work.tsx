@@ -1,12 +1,10 @@
 import Bins from './Bins'
 import { SectionHead } from './ui'
 
-/** Page 3 — opaque, so the 3D camera can cut to the contact scene behind it. */
+/** Page 3 — opaque, so the 3D camera can cut to the contact scene while it covers the screen. */
 export default function Work() {
   return (
-    <section id="work" aria-labelledby="work-title" className="relative z-10 min-h-[170svh] bg-cream pb-28 pt-28 md:pt-36">
-      {/* soft edge where the blue lab hands over */}
-      <div aria-hidden className="absolute inset-x-0 -top-24 h-24 bg-gradient-to-b from-transparent to-cream" />
+    <section id="work" aria-labelledby="work-title" className="relative min-h-full bg-cream pb-20 pt-24 md:pt-32">
       <div className="content-width">
         <SectionHead
           kicker="My work"

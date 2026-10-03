@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { profile } from '../content/site'
 import { useScrollLock } from '../lib/hooks'
-import { scrollToId } from '../lib/smooth'
+import { goTo, PAGES, usePage } from '../lib/pager'
 import { blip, setMuted, useMuted } from '../lib/sound'
 import { cx } from '../lib/util'
 import Logo from './Logo'
@@ -15,26 +15,10 @@ export const pages = [
   { id: 'contact', label: 'Contact' },
 ] as const
 
-function useActivePage() {
-  const [active, setActive] = useState<string>('home')
-  useEffect(() => {
-    const io = new IntersectionObserver(
-      (es) => es.forEach((e) => e.isIntersecting && setActive(e.target.id)),
-      { rootMargin: '-45% 0px -45% 0px' },
-    )
-    pages.forEach((p) => {
-      const el = document.getElementById(p.id)
-      if (el) io.observe(el)
-    })
-    return () => io.disconnect()
-  }, [])
-  return active
-}
-
 export default function Nav() {
   const [open, setOpen] = useState(false)
   const muted = useMuted()
-  const active = useActivePage()
+  const active = PAGES[usePage()]
   const dark = active === 'about'
   useScrollLock(open)
 
@@ -48,7 +32,7 @@ export default function Nav() {
   const go = (id: string) => {
     blip('click')
     setOpen(false)
-    setTimeout(() => scrollToId(id), 60)
+    goTo(id as (typeof PAGES)[number])
   }
 
   return (

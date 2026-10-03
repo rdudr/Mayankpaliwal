@@ -24,8 +24,16 @@ Theme and page flow follow github.com/Yashchauhan008/portfolio-3d, but every 3D
 scene is our own, built from primitives in code. That repo's models were bought on a
 marketplace and are NOT licensed to us — never copy its models/textures/code.
 
-One fixed R3F canvas (src/scene/Scene.tsx) holds three scenes side by side;
-scrolling flies the camera between them and fades the background colour.
+Full-page navigation like the reference (src/lib/pager.ts + components/Pager.tsx):
+four 100svh pages, a small wheel/swipe/key turns a whole page; tall pages scroll
+inside themselves first. No document scroll, no Lenis.
+One fixed R3F canvas (src/scene/Scene.tsx). The lab sits directly BELOW the room:
+Home → About plays the reference's signature transition (scene/Traveler.tsx) —
+room bounces out, he hops and falls straight down, turning from clay into a
+wireframe hologram as he crosses WIRE_Y, landing in the tube. Reverses going up.
+The contact scene is cut to while the opaque Projects page covers the canvas.
+Sounds (lib/sound.ts) follow the reference's cues but are synthesised in WebAudio
+— its mp3 files are not ours to reuse. Off by default.
 1. Home (#home) — cream #F5EFE6. "Hi, my name is Mayank." + Get in touch / Watch reel.
    Scene: clay editor typing at a desk, monitors show a live timeline + a real frame.
 2. About (#about) — lab blue #0B3D91, Electrolize HUD panels (profile, skills,
@@ -50,7 +58,7 @@ Client colours (bins only): Raj = mango, BeerBiceps = rose, Daud = teal, Freelan
 ## Stack
 React + Vite + TypeScript + Tailwind v4. React Three Fiber + drei (deep imports
 only, e.g. @react-three/drei/core/RoundedBox) in a lazy chunk. Framer Motion for
-UI animation. Lenis smooth scroll. No GSAP.
+UI animation. No GSAP, no Lenis.
 Deploy target: Vercel.
 
 ## Media

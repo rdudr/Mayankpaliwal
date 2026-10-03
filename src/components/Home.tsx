@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { profile } from '../content/site'
 import { useReducedMotion } from '../lib/hooks'
-import { scrollToId } from '../lib/smooth'
+import { goTo } from '../lib/pager'
 import { blip } from '../lib/sound'
 import { useReel } from './Reel'
 import { Icon } from './ui'
@@ -16,7 +16,7 @@ export default function Home({ ready }: { ready: boolean }) {
   })
 
   return (
-    <section id="home" aria-label="Introduction" className="relative h-[100svh] min-h-[600px]">
+    <section id="home" aria-label="Introduction" className="relative h-full min-h-[560px]">
       {/* Mobile: soft cream behind the text, scene shows below (like the reference) */}
       <div className="absolute inset-x-0 top-0 h-[60%] bg-gradient-to-b from-cream via-cream/80 to-transparent md:hidden" aria-hidden />
       <div className="content-width relative flex h-full flex-col justify-start pt-[18svh] md:justify-center md:pt-0">
@@ -34,7 +34,7 @@ export default function Home({ ready }: { ready: boolean }) {
             {profile.roles.join(' · ')}
           </motion.p>
           <motion.div className="mt-10 flex flex-wrap items-center gap-4" {...rise(0.46)}>
-            <button onClick={() => (blip('click'), scrollToId('contact'))} className="btn-orange h-14 px-9 text-[1.05rem]">
+            <button onClick={() => (blip('click'), goTo('contact'))} className="btn-orange h-14 px-9 text-[1.05rem]">
               Get in touch
             </button>
             <button
@@ -51,7 +51,7 @@ export default function Home({ ready }: { ready: boolean }) {
       </div>
 
       <motion.button
-        onClick={() => scrollToId('about')}
+        onClick={() => goTo('about')}
         aria-label="Scroll to about"
         className="absolute bottom-8 left-1/2 hidden h-11 w-7 -translate-x-1/2 justify-center rounded-full border-2 border-navy/40 pt-2 md:flex"
         initial={{ opacity: 0 }}

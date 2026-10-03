@@ -41,13 +41,13 @@ export default function Contact() {
   }
 
   return (
-    <section id="contact" aria-labelledby="contact-title" className="relative min-h-[100svh] pb-[48svh] pt-28 md:pb-24 md:pt-36">
-      <div className="content-width">
+    <section id="contact" aria-labelledby="contact-title" className="relative flex min-h-full flex-col pt-24">
+      <div className="content-width flex-1">
         <div className="w-full max-w-[580px] md:max-w-[45%]">
           <SectionHead kicker="Say hello 👋" title={<span id="contact-title">Contact me</span>} className="!mb-0" />
 
           <motion.div
-            className="mt-10 rounded-[20px] bg-white p-2.5 shadow-[0_30px_70px_-40px_rgba(9,20,52,.35)]"
+            className="mt-6 rounded-[20px] bg-white p-2.5 md:mt-8 shadow-[0_30px_70px_-40px_rgba(9,20,52,.35)]"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-10% 0px' }}
@@ -57,7 +57,7 @@ export default function Contact() {
               {sent ? (
                 <motion.div
                   key="done"
-                  className="flex min-h-[460px] flex-col items-center justify-center gap-4 p-6 text-center"
+                  className="flex min-h-[380px] flex-col items-center justify-center gap-4 p-6 text-center md:h-[clamp(360px,calc(100svh-370px),540px)]"
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
@@ -73,15 +73,15 @@ export default function Contact() {
                   <button onClick={() => setSent(false)} className="btn-orange mt-2 px-9 py-2.5">Back</button>
                 </motion.div>
               ) : (
-                <motion.form key="form" noValidate onSubmit={submit} className="flex min-h-[460px] flex-col md:h-[560px] md:max-h-[80vh]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <motion.form key="form" noValidate onSubmit={submit} className="flex min-h-[400px] flex-col md:h-[clamp(360px,calc(100svh-370px),540px)] md:min-h-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <Input id="name" label="Name" bad={bad.name} className="mb-5">
                     <input id="c-name" value={v.name} autoComplete="name" onChange={(e) => setV({ ...v, name: e.target.value })} aria-invalid={bad.name} aria-describedby={bad.name ? 'e-name' : undefined} className={field} />
                   </Input>
                   <Input id="email" label="Email" bad={bad.email} className="mb-5">
                     <input id="c-email" type="email" value={v.email} autoComplete="email" onChange={(e) => setV({ ...v, email: e.target.value })} aria-invalid={bad.email} aria-describedby={bad.email ? 'e-email' : undefined} className={field} />
                   </Input>
-                  <Input id="message" label="Message" bad={bad.message} className="flex-1">
-                    <textarea id="c-message" value={v.message} rows={6} onChange={(e) => setV({ ...v, message: e.target.value })} aria-invalid={bad.message} aria-describedby={bad.message ? 'e-message' : undefined} className={cx(field, 'h-full min-h-[140px] resize-none')} />
+                  <Input id="message" label="Message" bad={bad.message} className="min-h-0 flex-1">
+                    <textarea id="c-message" value={v.message} rows={6} onChange={(e) => setV({ ...v, message: e.target.value })} aria-invalid={bad.message} aria-describedby={bad.message ? 'e-message' : undefined} className={cx(field, 'h-full min-h-[56px] resize-none')} />
                   </Input>
                   <div className="mt-5 flex items-center">
                     <Social size={24} className="gap-0" />
@@ -93,6 +93,9 @@ export default function Contact() {
           </motion.div>
         </div>
       </div>
+      {/* phones: room for the parcel scene under the form */}
+      <div aria-hidden className="h-[46svh] shrink-0 md:hidden" />
+      <Footer />
     </section>
   )
 }
@@ -117,9 +120,9 @@ function Input({ id, label, bad, className, children }: { id: Field; label: stri
   )
 }
 
-export function Footer() {
+function Footer() {
   return (
-    <footer className="relative z-10 flex flex-col items-center gap-1 pb-8 text-[0.9rem] text-slate">
+    <footer className="relative z-10 mt-auto flex flex-col items-center gap-0.5 pb-4 pt-4 text-[0.85rem] text-slate">
       <span>© {new Date().getFullYear()} {profile.name}</span>
       <span>
         <a href={`mailto:${profile.email}`} className="hover:underline">{profile.email}</a> · <a href={`tel:${profile.phone.replace(/\s/g, '')}`} className="hover:underline">{profile.phone}</a>

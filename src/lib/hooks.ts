@@ -42,10 +42,8 @@ export function useScrollLock(locked: boolean) {
   useEffect(() => {
     if (!locked) return
     document.documentElement.classList.add('lock')
-    window.__lenis?.stop()
     return () => {
       document.documentElement.classList.remove('lock')
-      window.__lenis?.start()
     }
   }, [locked])
 }
