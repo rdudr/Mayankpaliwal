@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { experience, profile, skills } from '../content/site'
 import { useReducedMotion } from '../lib/hooks'
 import { clientMeta, tbc } from '../lib/util'
@@ -50,6 +50,32 @@ function Avatar() {
   )
 }
 
+/** His photo, with a faint HUD scanline tint; falls back to the drawn avatar if missing. */
+function Portrait() {
+  const [failed, setFailed] = useState(false)
+  if (failed) return <Avatar />
+  return (
+    <div className="relative size-full">
+      <img
+        src={profile.portrait}
+        alt={profile.name}
+        onError={() => setFailed(true)}
+        decoding="async"
+        className="size-full object-cover"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0b3d91]/55 via-transparent to-transparent mix-blend-multiply"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-25"
+        style={{ background: 'repeating-linear-gradient(0deg, rgba(52,191,255,.35) 0 1px, transparent 1px 4px)' }}
+      />
+    </div>
+  )
+}
+
 export default function About() {
   const reduced = useReducedMotion()
   return (
@@ -67,7 +93,7 @@ export default function About() {
           >
             <div className="hud-frame size-32 shrink-0 sm:size-40">
               <div className="hud-inner size-full overflow-hidden">
-                <Avatar />
+                <Portrait />
               </div>
             </div>
             <div className="hud-frame -ml-[2px] mt-auto min-w-0 flex-1 [--cut:14px]">
