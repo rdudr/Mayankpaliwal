@@ -19,73 +19,53 @@ Every effect must either show the work faster or say something about how he edit
 Contact: mayankpaliwalbusiness@gmail.com · +91 7014286214 ·
 instagram.com/mayankpaliwaal
 
-## Concept: "The Edit — Sequence 01"
-The site is a Premiere Pro sequence. Scroll = playhead. Sections = clips.
-Folders = bins. Contact = Export dialog.
+## Concept (redesign, 2026-10-03): four-page 3D portfolio
+Theme and page flow follow github.com/Yashchauhan008/portfolio-3d, but every 3D
+scene is our own, built from primitives in code. That repo's models were bought on a
+marketplace and are NOT licensed to us — never copy its models/textures/code.
 
-Sections, in order (each transition is a named edit transition):
-0. Render bay loader — 3D edit monitor renders, camera dollies into the Program
-   Monitor which becomes the hero video. Max 2.5s, skip button, first visit only,
-   2D fallback on mobile. (Dolly in)
-1. Hero — fullscreen muted loop, letterbox 2.39:1 bars open on scroll, name in
-   Instrument Serif, "Watch reel (90s)" opens full reel with sound. J/K/L +
-   space scrub the reel. (Letterbox open)
-2. Proof strip — film-strip marquee: Raj Shamani · BeerBiceps · Daud; counters
-   roll like timecode. (Hard cut)
-3. Selected work — grid starts desaturated like LOG footage; cursor spotlight
-   "grades" it to colour; 3s muted preview on hover. (Match cut)
-4. Bins — folder-fan component per client; DAUD_BTS fans out EP01–EP06.
-   (Cross dissolve)
-5. Timeline — pinned horizontal scroll, career as coloured clips on V1,
-   playhead follows scroll, click a clip to flip-card details. Vertical on mobile.
-   (Whip pan)
-6. Before / after — razor-line drag slider (only with client permission). (J-cut)
-7. Stills — contact sheet with loupe cursor, lightbox. Only if photos are strong.
-   (Dip to black)
-8. Export — contact as Premiere's Export dialog; mailto + wa.me links. (Fade out)
-9. End credits footer, fade to black.
+One fixed R3F canvas (src/scene/Scene.tsx) holds three scenes side by side;
+scrolling flies the camera between them and fades the background colour.
+1. Home (#home) — cream #F5EFE6. "Hi, my name is Mayank." + Get in touch / Watch reel.
+   Scene: clay editor typing at a desk, monitors show a live timeline + a real frame.
+2. About (#about) — lab blue #0B3D91, Electrolize HUD panels (profile, skills,
+   tools, about, experience). Scene: hologram character in a glass tube with
+   floating app logos (from profile.tools), bubbles, waveform monitor.
+3. Projects (#work) — opaque cream page with the Premiere "Project:
+   Mayank_Paliwal.prproj" bins panel (fan of up to 7 + full clip list).
+   While it covers the screen the camera cuts to the contact scene.
+4. Contact (#contact) — same layout as the reference contact page (white card,
+   grey fields, socials, orange Submit → opens mailto). Scene: character on
+   parcel boxes with floating envelopes. Footer.
 
-Global: persistent mini-timeline docked at bottom (clickable nav + playhead),
-timecode counter top-right, tool cursors (arrow / razor / hand, desktop only),
-UI sounds OFF by default behind a track "M" toggle, ~3% film grain.
+Loader: clapperboard logo + "rendering" timeline (clips land, waveform, playhead).
+Logo: clapperboard with play button (src/components/Logo.tsx) — NOT the reference's cube.
+Nav: grey sound toggle + orange menu button → white slide-in menu.
 
 ## Visual system
-- Base: Premiere-style panel greys (not pure black) — page ~#1c1c1f, panels
-  ~#26262a, hairlines ~#35353b, text warm off-white ~#ecebe8.
-- Single accent: Premiere's blue playhead. No second accent.
-- Clip label colours ONLY as client codes, used consistently everywhere:
-  Raj Shamani = mango, BeerBiceps = rose, Daud = caribbean/teal,
-  Freelance = lavender.
-- Type: Instrument Serif (display), Inter 400/500 (body), a mono face for
-  timecode and clip names only.
-- Liquid-glass nav/buttons are fine; keep restraint — one memorable moment,
-  everything else quiet.
+Poppins (UI), Electrolize (lab HUD), JetBrains Mono (bins panel only).
+Navy #091434 text, slate #7c8594, orange #ff923e accent, white cards.
+Client colours (bins only): Raj = mango, BeerBiceps = rose, Daud = teal, Freelance = lavender.
 
 ## Stack
-React + Vite + TypeScript + Tailwind v4 (+ shadcn/ui where useful).
-GSAP (ScrollTrigger — scroll pinning/scrubbing only) + Lenis. Framer Motion for
-component animation (modals, fans, flips, hovers) — Rishabh asked for it 2026-09-29.
-React Three Fiber + drei for the loader only, lazy-loaded.
-Full-length videos = YouTube embeds behind click-to-load facades. Only the reel,
-hero loop and 3–5s previews are self-hosted from public/media.
+React + Vite + TypeScript + Tailwind v4. React Three Fiber + drei (deep imports
+only, e.g. @react-three/drei/core/RoundedBox) in a lazy chunk. Framer Motion for
+UI animation. Lenis smooth scroll. No GSAP.
 Deploy target: Vercel.
 
-## Performance + accessibility floor
-Hero playable in ~2s on 4G. Respect prefers-reduced-motion (skip loader, no
-scrub). Keyboard focus visible. Responsive down to 360px.
+## Media
+- Raj Shamani projects = YouTube links; thumbnails come from i.ytimg.com.
+- Daud EP01–06 self-hosted in public/media/projects/daud (720p ~5–10 MB each,
+  4s previews, thumbnails). Raw originals in "Resume Videos/" (git-ignored).
+- No showreel yet: "Watch reel" plays Daud EP01 until /media/reel/showreel.mp4 exists.
+- BeerBiceps + Freelance bins hold one placeholder card each (placeholder: true).
 
-## Current state
-- Full site built (2026-09-29). Sections live in src/components/, order in src/App.tsx,
-  section/transition names in src/content/sequence.ts.
-- All media currently falls back to hosted SAMPLE clips/photos (src/content/samples.ts).
-  Dropping a real file into public/media/** replaces its sample automatically.
-- Asset checklist moved to /?checklist (src/dev/Checklist.tsx).
-- Section switches in site.ts: beforeAfter.enabled, showStills.
-- UX rules applied from the ui-ux-pro-max skill (~/.claude/skills/ui-ux-pro-max);
-  its colour/font suggestions were NOT used — this brief's visual system wins.
+## Performance + accessibility floor
+Respect prefers-reduced-motion (no idle animation, instant loader). Keyboard focus
+visible. Responsive down to 360px; scene sits below text on phones.
 
 ## Open items to ask Rishabh about
-- What Mayank edits for Raj Shamani (long-form / shorts / which episodes)
 - What he did at BeerBiceps
 - 2–3 freelance client/project types for 2021–2025
-- Permission for before/after raw footage; any testimonials
+- BeerBiceps video links; real skill levels; confirm tool list
+- Any testimonials; a proper 60–90s showreel

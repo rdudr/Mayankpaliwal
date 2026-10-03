@@ -1,26 +1,32 @@
-import { projects, type Project } from '../content/site'
-import { clientMeta, tbc } from './util'
+import { projects, type Client, type Project } from '../content/site'
+import { clientMeta, youtubeId } from './util'
 
 export type ProjectView = Project & {
-  displayTitle: string
   thumb: string
-  preview: string
-  meta: (typeof clientMeta)[Project['client']]
+  preview?: string
+  yt?: string
+  meta: (typeof clientMeta)[Client]
   clipName: string
 }
 
 export function view(p: Project): ProjectView {
   const meta = clientMeta[p.client]
-  const n = projects.filter((q) => q.client === p.client).indexOf(p) + 1
+  const yt = p.link ? youtubeId(p.link) : undefined
   return {
     ...p,
     meta,
-    displayTitle: tbc(p.title, `${meta.label} — edit ${String(n).padStart(2, '0')}`),
-    thumb: `/media/projects/${p.client}/${p.id}.jpg`,
-    preview: `/media/projects/${p.client}/${p.id}-preview.mp4`,
-    clipName: `${meta.bin}_${p.id.toUpperCase().replace('-', '')}.mp4`,
+    yt,
+    thumb: yt ? `https://i.ytimg.com/vi/${yt}/maxresdefault.jpg` : `/media/projects/${p.client}/${p.id}.jpg`,
+    preview: yt ? undefined : `/media/projects/${p.client}/${p.id}-preview.mp4`,
+    clipName: `${meta.bin}_${(p.episode ?? p.id).replace(/\s+/g, '').toUpperCase()}`,
   }
 }
 
 export const allProjects = projects.map(view)
-export const byClient = (c: Project['client']) => allProjects.filter((p) => p.client === c)
+
+/** A bin's clips. Placeholder cards disappear as soon as the bin has real work. */
+export function byClient(c: Client) {
+  const all = allProjects.filter((p) => p.client === c)
+  const real = all.filter((p) => !p.placeholder)
+  return real.length ? real : all
+}

@@ -1,56 +1,42 @@
-import { useEffect, useState } from 'react'
-import { beforeAfter, showStills } from './content/site'
-import BeforeAfter from './components/BeforeAfter'
-import Bins from './components/Bins'
-import { Header, MiniTimeline } from './components/Chrome'
-import Credits from './components/Credits'
-import Export from './components/Export'
-import Hero from './components/Hero'
-import Loader, { loaderMode } from './components/Loader'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import About from './components/About'
+import Contact, { Footer } from './components/Contact'
+import Home from './components/Home'
+import Loader from './components/Loader'
+import Nav from './components/Nav'
 import { ProjectProvider } from './components/ProjectModal'
-import Proof from './components/Proof'
 import { ReelProvider } from './components/Reel'
-import Stills from './components/Stills'
-import Timeline from './components/Timeline'
 import Work from './components/Work'
 import { useReducedMotion } from './lib/hooks'
-import { ScrollTrigger, startSmoothScroll } from './lib/scroll'
+import { startSmoothScroll } from './lib/smooth'
 
-const initialMode = loaderMode()
+// three.js + the scenes load in their own chunk while the loader plays.
+const Scene = lazy(() => import('./scene/Scene'))
 
 export default function App() {
   const reduced = useReducedMotion()
-  const [ready, setReady] = useState(initialMode === 'none')
+  const [sceneReady, setSceneReady] = useState(false)
+  const [entered, setEntered] = useState(false)
+  const onReady = useCallback(() => setSceneReady(true), [])
 
   useEffect(() => startSmoothScroll(reduced), [reduced])
-
-  // Media and fonts change section heights — re-measure pinned sections once they settle.
-  useEffect(() => {
-    const refresh = () => ScrollTrigger.refresh()
-    document.fonts?.ready.then(refresh)
-    addEventListener('load', refresh)
-    return () => removeEventListener('load', refresh)
-  }, [])
 
   return (
     <ReelProvider>
       <ProjectProvider>
-        <a href="#work" className="skip-link">Skip to work</a>
-        {initialMode !== 'none' && !ready && <Loader mode={initialMode} onDone={() => setReady(true)} />}
-        <Header />
-        <main>
-          <Hero ready={ready} />
-          <Proof />
+        <a href="#work" className="skip-link">Skip to projects</a>
+        <Suspense fallback={null}>
+          <Scene reduced={reduced} onReady={onReady} />
+        </Suspense>
+        {!entered && <Loader ready={sceneReady} onDone={() => setEntered(true)} />}
+        <Nav />
+        <main className="relative z-[1]">
+          <Home ready={entered} />
+          <About />
           <Work />
-          <Bins />
-          <Timeline />
-          {beforeAfter.enabled && <BeforeAfter />}
-          {showStills && <Stills />}
-          <Export />
+          <Contact />
         </main>
-        <Credits />
-        <MiniTimeline />
-        <div className="grain" aria-hidden />
+        <Footer />
       </ProjectProvider>
     </ReelProvider>
   )

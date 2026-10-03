@@ -19,8 +19,10 @@ public/media/
   logos/         (only if allowed)
 ```
 
-Big full-length videos do NOT go here. Put their YouTube/Instagram links in
-`src/content/site.ts` instead. Only short previews and the reel live in the folder.
+YouTube videos only need their link in `src/content/site.ts` — the thumbnail is
+fetched from YouTube automatically. Self-hosted videos (like the Daud episodes)
+should be compressed to ~720p first; the raw originals stay in `Resume Videos/`,
+which is not uploaded to GitHub.
 
 ## 2. Fill in the text
 Open `src/content/site.ts` and replace every `TODO`.

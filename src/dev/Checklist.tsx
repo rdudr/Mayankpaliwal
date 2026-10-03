@@ -1,21 +1,17 @@
 import { useEffect, useState } from 'react'
-import { profile, projects, stills, beforeAfter, experience } from '../content/site'
+import { profile, projects, experience } from '../content/site'
 
 type Slot = { group: string; label: string; path: string }
 
 const slots: Slot[] = [
   { group: 'Reel', label: 'Showreel (60–90s, with sound)', path: profile.showreel },
   { group: 'Reel', label: 'Showreel poster', path: profile.showreelPoster },
-  { group: 'Hero', label: 'Hero loop (12–15s, silent)', path: profile.heroLoop },
-  { group: 'Hero', label: 'Hero poster', path: profile.heroPoster },
-  { group: 'Portrait', label: 'Portrait', path: profile.portrait },
-  ...projects.flatMap((p) => [
-    { group: `Projects · ${p.client}`, label: `${p.title} — thumbnail`, path: `/media/projects/${p.client}/${p.id}.jpg` },
-    { group: `Projects · ${p.client}`, label: `${p.title} — preview`, path: `/media/projects/${p.client}/${p.id}-preview.mp4` },
-  ]),
-  { group: 'Before / after', label: 'Before frame', path: beforeAfter.before },
-  { group: 'Before / after', label: 'After frame', path: beforeAfter.after },
-  ...stills.map((s, i) => ({ group: 'Stills', label: `Still ${i + 1}`, path: s })),
+  ...projects
+    .filter((p) => !p.link?.includes('youtu'))
+    .flatMap((p) => [
+      { group: `Projects · ${p.client}`, label: `${p.title} — thumbnail`, path: `/media/projects/${p.client}/${p.id}.jpg` },
+      { group: `Projects · ${p.client}`, label: `${p.title} — preview`, path: `/media/projects/${p.client}/${p.id}-preview.mp4` },
+    ]),
 ]
 
 async function exists(path: string) {
@@ -40,7 +36,7 @@ export default function Checklist() {
   const todos = [
     ...Object.entries(profile).filter(([, v]) => typeof v === 'string' && v.includes('TODO')).map(([k]) => `profile.${k}`),
     ...experience.filter((e) => JSON.stringify(e).includes('TODO')).map((e) => `experience: ${e.title}`),
-    ...projects.filter((p) => JSON.stringify(p).includes('TODO')).map((p) => `project: ${p.id}`),
+    ...projects.filter((p) => p.placeholder).map((p) => `placeholder project: ${p.id}`),
   ]
 
   const done = slots.filter((s) => found[s.path]).length

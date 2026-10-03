@@ -1,88 +1,98 @@
-import { AnimatePresence, motion } from 'framer-motion'
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
-import { profile } from '../content/site'
+import { AnimatePresence, animate, motion } from 'framer-motion'
+import { useEffect, useRef, useState } from 'react'
+import { useReducedMotion } from '../lib/hooks'
+import Logo from './Logo'
 
-const LoaderScene = lazy(() => import('./LoaderScene'))
-const KEY = 'mp-seen-loader'
-const MAX_MS = 2500
+const CLIPS = [
+  { c: '#f2a93b', x: 0, w: 22 },
+  { c: '#2ec4b6', x: 23, w: 14 },
+  { c: '#e0698e', x: 38, w: 18 },
+  { c: '#a393eb', x: 57, w: 11 },
+  { c: '#f2a93b', x: 69, w: 31 },
+]
 
-function hasWebGL() {
-  try {
-    const c = document.createElement('canvas')
-    return !!(c.getContext('webgl2') || c.getContext('webgl'))
-  } catch {
-    return false
-  }
-}
-
-/** Decides once, before first paint, whether to show the render-bay loader. */
-export function loaderMode(): 'none' | '2d' | '3d' {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return 'none'
-  try {
-    if (localStorage.getItem(KEY)) return 'none'
-  } catch {}
-  const desktop = matchMedia('(min-width: 900px) and (hover: hover)').matches
-  return desktop && hasWebGL() ? '3d' : '2d'
-}
-
-export default function Loader({ mode, onDone }: { mode: '2d' | '3d'; onDone: () => void }) {
+/**
+ * "Rendering" loader: clips land on V1, the waveform plays on A1, the playhead
+ * sweeps. When the 3D scene is ready the slate claps and the page slides up.
+ */
+export default function Loader({ ready, onDone }: { ready: boolean; onDone: () => void }) {
+  const reduced = useReducedMotion()
+  const [p, setP] = useState(0)
+  const [clap, setClap] = useState(0)
   const [show, setShow] = useState(true)
-  const finish = useCallback(() => setShow(false), [])
+  const done = useRef(false)
+
+  // Ease to 85% on our own, then wait for the scene (max 6s) before finishing.
+  useEffect(() => {
+    const c = animate(0, 85, { duration: reduced ? 0.2 : 1.6, ease: 'easeOut', onUpdate: setP })
+    return () => c.stop()
+  }, [reduced])
 
   useEffect(() => {
-    try {
-      localStorage.setItem(KEY, '1')
-    } catch {}
-    const t = setTimeout(finish, MAX_MS) // hard cap: never hold the reel back longer than 2.5s
-    const k = (e: KeyboardEvent) => (e.key === 'Escape' || e.key === 'Enter') && finish()
-    addEventListener('keydown', k)
-    return () => (clearTimeout(t), removeEventListener('keydown', k))
-  }, [finish])
+    const finish = () => {
+      if (done.current) return
+      done.current = true
+      animate(p, 100, { duration: 0.35, onUpdate: setP, onComplete: () => {
+        setClap(1)
+        setTimeout(() => setShow(false), reduced ? 0 : 420)
+      } })
+    }
+    if (ready && p >= 85) finish()
+    const cap = setTimeout(finish, 6000)
+    return () => clearTimeout(cap)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, p >= 85])
 
   return (
     <AnimatePresence onExitComplete={onDone}>
       {show && (
         <motion.div
-          className="fixed inset-0 z-[90] bg-[#101012]"
-          exit={{ opacity: 0, transition: { duration: 0.35, ease: 'easeOut' } }}
+          className="fixed inset-0 z-[90] grid place-items-center bg-cream"
+          exit={{ y: '-100%', transition: { duration: reduced ? 0 : 0.7, ease: [0.65, 0.05, 0.36, 1] } }}
           role="status"
-          aria-label="Loading"
+          aria-label={`Loading ${Math.round(p)}%`}
         >
-          {mode === '3d' ? (
-            <Suspense fallback={<Flat onDone={finish} />}>
-              <LoaderScene duration={2.1} onDone={finish} />
-            </Suspense>
-          ) : (
-            <Flat onDone={finish} />
-          )}
-          <button
-            onClick={finish}
-            className="glass mono absolute bottom-6 right-6 h-11 rounded-full px-5 text-xs text-dim transition-colors hover:text-ink"
-          >
-            Skip ›
-          </button>
-          <p className="mono absolute bottom-8 left-6 text-xs text-faint">Rendering Sequence 01 — {profile.name}</p>
+          <div className="flex w-[min(440px,86vw)] flex-col items-center">
+            <Logo size={84} clap={clap} />
+            <div className="mt-8 w-full rounded-2xl bg-white p-4 shadow-[0_20px_60px_-30px_rgba(9,20,52,.35)]">
+              <div className="mb-3 flex items-center justify-between text-xs text-slate">
+                <span className="mono">Mayank_Paliwal.prproj</span>
+                <span className="mono tabular-nums text-navy">{Math.round(p)}%</span>
+              </div>
+              <div className="relative overflow-hidden rounded-lg bg-[#f3f1ed] p-2">
+                {/* V1 */}
+                <div className="relative h-7">
+                  {CLIPS.map((c, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute inset-y-0 rounded-md"
+                      style={{ left: `${c.x}%`, width: `${c.w}%`, background: c.c }}
+                      initial={{ opacity: 0, y: -14 }}
+                      animate={p > c.x ? { opacity: 1, y: 0 } : {}}
+                      transition={{ type: 'spring', stiffness: 500, damping: 26 }}
+                    />
+                  ))}
+                </div>
+                {/* A1 waveform */}
+                <div className="mt-1.5 flex h-6 items-center gap-[2px] overflow-hidden">
+                  {Array.from({ length: 60 }, (_, i) => (
+                    <span
+                      key={i}
+                      className="min-w-[2px] flex-1 rounded-full bg-[#2ec4b6]"
+                      style={{ height: `${20 + Math.abs(Math.sin(i * 1.7) * Math.cos(i * 0.45)) * 80}%`, opacity: i / 60 < p / 100 ? 0.9 : 0.2 }}
+                    />
+                  ))}
+                </div>
+                {/* playhead */}
+                <div className="absolute inset-y-0 w-0.5 bg-orange" style={{ left: `calc(${p}% - 1px)` }}>
+                  <span className="absolute -left-[5px] -top-0.5 size-3 rotate-45 rounded-[2px] bg-orange" />
+                </div>
+              </div>
+              <p className="mt-3 text-center text-sm text-slate">{p < 100 ? 'Rendering the edit…' : 'Export complete'}</p>
+            </div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
-  )
-}
-
-/** 2D fallback: a render bar fills, then the Program Monitor scales up to full screen. */
-function Flat({ onDone }: { onDone: () => void }) {
-  return (
-    <div className="grid size-full place-items-center p-6">
-      <motion.div
-        className="relative aspect-video w-full max-w-md overflow-hidden rounded-md border border-line bg-[linear-gradient(135deg,#1d2a3a,#3b2a2e)]"
-        animate={{ scale: [1, 1, 4.5], opacity: [1, 1, 0] }}
-        transition={{ duration: 1.9, times: [0, 0.7, 1], ease: 'easeIn' }}
-        onAnimationComplete={onDone}
-      >
-        <p className="display absolute inset-0 grid place-items-center text-3xl italic">{profile.name}</p>
-        <div className="absolute inset-x-0 bottom-0 h-1 bg-black/40">
-          <motion.div className="h-full bg-[#e8c34a]" initial={{ width: '0%' }} animate={{ width: '100%', backgroundColor: '#28c840' }} transition={{ duration: 1.3, ease: 'easeOut' }} />
-        </div>
-      </motion.div>
-    </div>
   )
 }

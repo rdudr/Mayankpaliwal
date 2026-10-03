@@ -2,7 +2,6 @@ import { createContext, useCallback, useContext, useState, type ReactNode } from
 import type { ProjectView } from '../lib/projects'
 import { Img, Video } from '../lib/media'
 import { blip } from '../lib/sound'
-import { tbc, youtubeId } from '../lib/util'
 import { CloseButton, Dot, Icon, Modal } from './ui'
 
 const Ctx = createContext<(p: ProjectView) => void>(() => {})
@@ -15,65 +14,65 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={open}>
       {children}
-      <Modal open={!!p} onClose={close} label={p?.displayTitle ?? 'Project'} className="max-w-5xl">
+      <Modal open={!!p} onClose={close} label={p?.title ?? 'Project'} className="max-w-5xl">
         {p && <ProjectBody p={p} onClose={close} />}
       </Modal>
     </Ctx.Provider>
   )
 }
 
-/** Full videos stay on YouTube behind a click-to-load facade — no iframe until asked. */
+/** YouTube stays behind a click-to-load facade (no iframe until asked). Self-hosted episodes play inline. */
 function ProjectBody({ p, onClose }: { p: ProjectView; onClose: () => void }) {
   const [loaded, setLoaded] = useState(false)
-  const yt = youtubeId(p.link)
-  const external = tbc(p.link).startsWith('http') ? p.link : ''
+  const external = p.link?.startsWith('http') ? p.link : ''
 
   return (
-    <div>
-      <div className="relative aspect-video bg-black">
-        {loaded && yt ? (
+    <div className="text-ink">
+      <div className="relative flex aspect-video max-h-[70svh] w-full items-center justify-center bg-black">
+        {p.yt && loaded ? (
           <iframe
             className="absolute inset-0 size-full"
-            src={`https://www.youtube-nocookie.com/embed/${yt}?autoplay=1&rel=0`}
-            title={p.displayTitle}
+            src={`https://www.youtube-nocookie.com/embed/${p.yt}?autoplay=1&rel=0`}
+            title={p.title}
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowFullScreen
           />
-        ) : yt ? (
-          <button onClick={() => setLoaded(true)} className="group absolute inset-0" aria-label={`Play ${p.displayTitle}`}>
-            <Img src={p.thumb} alt="" className="size-full object-cover" />
-            <span className="absolute left-1/2 top-1/2 grid size-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-accent text-white transition-transform group-hover:scale-110">
-              <Icon.play className="size-7" />
+        ) : p.yt ? (
+          <button onClick={() => setLoaded(true)} className="group absolute inset-0" aria-label={`Play ${p.title}`} data-autofocus>
+            <Img src={p.thumb} alt="" loading="eager" className="size-full object-cover" />
+            <span className="absolute left-1/2 top-1/2 grid size-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[#ff0033] text-white shadow-xl transition-transform group-hover:scale-110">
+              <Icon.play className="ml-1 size-8" />
             </span>
           </button>
+        ) : p.video ? (
+          <Video src={p.video} poster={p.thumb} controls autoPlay className="size-full object-contain" data-autofocus />
         ) : (
-          <Video src={p.preview} poster={undefined} muted loop autoPlay className="size-full object-cover" />
+          <Img src={p.thumb} alt="" className="size-full object-cover" />
         )}
-        <CloseButton onClick={onClose} className="absolute right-3 top-3" />
+        <CloseButton onClick={onClose} className="absolute right-3 top-3 z-10" />
       </div>
 
-      <div className="grid gap-6 p-5 sm:p-8 md:grid-cols-[1fr_auto] md:items-end">
-        <div>
-          <p className="mono mb-3 flex items-center gap-2 text-xs text-dim">
-            <Dot color={p.meta.color} /> {p.meta.label} · {p.clipName}
+      <div className="grid gap-5 p-5 sm:p-7 md:grid-cols-[1fr_auto] md:items-end">
+        <div className="min-w-0">
+          <p className="mono mb-2 flex items-center gap-2 text-xs text-dim">
+            <Dot color={p.meta.color} /> {p.meta.label}
+            {p.episode && <> · {p.episode}</>}
           </p>
-          <h3 className="display text-4xl sm:text-5xl">{p.displayTitle}</h3>
-          <p className="mt-3 text-dim">
+          <h3 className="text-2xl font-semibold leading-snug sm:text-3xl">{p.title}</h3>
+          <p className="mt-2 text-sm text-dim">
             {p.role}
             {p.result && <> · <span className="text-ink">{p.result}</span></>}
           </p>
         </div>
-        {external ? (
+        {external && (
           <a
             href={external}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-12 items-center gap-2 justify-self-start rounded-full border border-line px-5 transition-colors hover:border-ink"
+            className="btn-orange inline-flex h-12 items-center gap-2 justify-self-start px-6"
           >
-            Watch full video <Icon.external className="size-4" />
+            {p.yt ? 'Watch on YouTube' : 'Open on Instagram'} <Icon.external className="size-4" />
           </a>
-        ) : (
-          <p className="mono text-xs text-faint">Full video link coming soon</p>
         )}
       </div>
     </div>

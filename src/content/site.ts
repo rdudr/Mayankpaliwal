@@ -1,26 +1,39 @@
 // ─────────────────────────────────────────────────────────────
 // ALL PORTFOLIO TEXT + LINKS LIVE HERE.
-// Fill every "TODO". Media paths point into /public/media.
+// Anything still marked "TODO" is hidden on the live site until filled.
+// Media paths point into /public/media.
 // ─────────────────────────────────────────────────────────────
 
 export type Client = 'raj-shamani' | 'beerbiceps' | 'daud' | 'freelance'
 
 export const profile = {
   name: 'Mayank Paliwal',
+  firstName: 'Mayank',
   roles: ['Video Editor', 'Filmmaker', 'Storyteller'],
-  oneLiner: 'TODO: one sentence on what he does best',
+  oneLiner: 'I edit long-form stories people actually finish watching.',
   yearsLabel: '5+ years',
   since: 2021,
+  from: 'India',
   email: 'mayankpaliwalbusiness@gmail.com',
   phone: '+91 7014286214',
   instagram: 'https://www.instagram.com/mayankpaliwaal',
-  tools: ['Premiere Pro', 'TODO: After Effects?', 'TODO: DaVinci Resolve?'],
-  portrait: '/media/portrait/mayank.jpg',
-  showreel: '/media/reel/showreel.mp4',
+  about:
+    'Video editor, filmmaker and storyteller from India, cutting since 2021. Today I edit long-form podcast episodes for Raj Shamani’s Figuring Out; before that BeerBiceps, and years of freelance work — including the Daud behind-the-scenes series.',
+  // Shown as the floating logos in the lab and as tool chips. Confirm this list with Mayank.
+  tools: ['Premiere Pro', 'After Effects', 'Photoshop', 'Illustrator', 'Final Cut Pro', 'DaVinci Resolve'],
+  showreel: '/media/reel/showreel.mp4', // until a reel exists, Daud EP01 plays instead
   showreelPoster: '/media/reel/showreel-poster.jpg',
-  heroLoop: '/media/hero/hero-loop.mp4',
-  heroPoster: '/media/hero/hero-poster.jpg',
 }
+
+// Bar lengths are placeholders (0–100) — adjust with Mayank.
+export const skills = [
+  { name: 'Long-form editing', level: 95 },
+  { name: 'Storytelling & pacing', level: 92 },
+  { name: 'Short-form / reels', level: 88 },
+  { name: 'Colour grading', level: 75 },
+  { name: 'Motion graphics', level: 70 },
+  { name: 'Sound design', level: 78 },
+]
 
 export const experience = [
   {
@@ -29,7 +42,7 @@ export const experience = [
     role: 'Video Editor',
     period: 'Sep 2025 – Present',
     link: 'https://www.youtube.com/rajshamani',
-    summary: 'TODO: what exactly he edits (long-form episodes? shorts? how many?)',
+    summary: 'Long-form podcast episodes for Figuring Out — guests include Emmanuel Macron, DY Chandrachud, Kiara Advani and Smriti Mandhana.',
   },
   {
     client: 'beerbiceps' as Client,
@@ -61,41 +74,53 @@ export const experience = [
 ]
 
 export type Project = {
-  id: string            // must match file names in the client folder
+  id: string
   client: Client
   title: string
   role: string
-  link: string          // YouTube / Instagram URL
-  result?: string       // e.g. "1.2M views"
+  link?: string     // YouTube / Instagram URL (YouTube ones get their thumbnail automatically)
+  video?: string    // self-hosted full video in /public/media
+  episode?: string  // e.g. "FO473" or "EP 01"
+  result?: string
+  placeholder?: boolean // sample card — hidden once real work is added to the bin
 }
 
-// Thumbnail  = /media/projects/<client>/<id>.jpg
-// Preview    = /media/projects/<client>/<id>-preview.mp4
+const rs = (id: string, episode: string, title: string): Project => ({
+  id, client: 'raj-shamani', episode, title, role: 'Editor', link: `https://youtu.be/${id}`,
+})
+
+// Self-hosted files: /media/projects/<client>/<id>.jpg, <id>-preview.mp4, <id>.mp4
+const daud = (n: number, title: string): Project => {
+  const id = `ep${String(n).padStart(2, '0')}`
+  return { id, client: 'daud', episode: `EP ${String(n).padStart(2, '0')}`, title, role: 'Editor', video: `/media/projects/daud/${id}.mp4`, link: 'https://www.instagram.com/arpitjainn__/' }
+}
+
 export const projects: Project[] = [
-  { id: 'ep01', client: 'daud', title: 'Daud BTS — Episode 1', role: 'Editor', link: 'TODO' },
-  { id: 'ep02', client: 'daud', title: 'Daud BTS — Episode 2', role: 'Editor', link: 'TODO' },
-  { id: 'ep03', client: 'daud', title: 'Daud BTS — Episode 3', role: 'Editor', link: 'TODO' },
-  { id: 'ep04', client: 'daud', title: 'Daud BTS — Episode 4', role: 'Editor', link: 'TODO' },
-  { id: 'ep05', client: 'daud', title: 'Daud BTS — Episode 5', role: 'Editor', link: 'TODO' },
-  { id: 'ep06', client: 'daud', title: 'Daud BTS — Episode 6', role: 'Editor', link: 'TODO' },
-  { id: 'rs-01', client: 'raj-shamani', title: 'TODO episode title', role: 'Editor', link: 'TODO' },
-  { id: 'rs-02', client: 'raj-shamani', title: 'TODO episode title', role: 'Editor', link: 'TODO' },
-  { id: 'bb-01', client: 'beerbiceps', title: 'TODO video title', role: 'Editor', link: 'TODO' },
-  { id: 'fl-01', client: 'freelance', title: 'TODO project', role: 'Editor', link: 'TODO' },
-]
+  rs('9QXCkMTbrSk', 'FO473', 'President of France on Trump, India, Modi, Tech & Future — Emmanuel Macron'),
+  rs('46P1rL0rzPE', 'FO561', 'Smriti Mandhana on Controlling Emotions, Handling Pressure & Failures'),
+  rs('GKn7ywUpB6c', 'FO555', 'Why Is Watchmaking So Difficult? The Business Behind Luxury — Gaurav Mehta'),
+  rs('9CADz6sP40I', 'FO551', 'The Most Expensive Cars Compete on Emotion, Not Engineering — Frank Walliser'),
+  rs('zSkxqtTbEGU', 'FO545', 'Why America Is No Longer the World’s Leader — Ian Bremmer'),
+  rs('PXMyK7JxGOk', 'FO537', 'Billion-Dollar Founder: Why Success in India Is So Hard — Kiran Mazumdar-Shaw'),
+  rs('o-h3STaeFro', 'FO529', 'Why Banks Are Dying: Bitcoin, Crypto & De-dollarisation — Richard Teng'),
+  rs('0TBjnUfulGw', 'FO527', 'Inside India’s Supreme Court: Money, Justice & Free Speech — DY Chandrachud'),
+  rs('NGV5S9j_oL4', 'FO523', 'Russian Spy: Mind Control, Seduction & Manipulation — Aliia Roza'),
+  rs('lacFcgcHx6I', 'FO518', 'Top Brain Scientist: Billionaire Brain, Anxiety & Addictions — Vidita Vaidya'),
+  rs('sGpc8-f2e8U', 'FO517', 'Imtiaz Ali on Love, Heartbreak, Rockstar, Tamasha & Bollywood Filmmaking'),
+  rs('JCOb1w_LTOg', 'FO512', 'Champion Mindset: High Performance, Discipline & Obsession'),
+  rs('3otrmTL24OA', 'FO507', 'Kiara Advani on Marriage, Motherhood, Relationships & Bollywood'),
+  rs('23dbj3silMU', 'FO504', 'Lakshya Sen on Champion Mindset, Olympic Heartbreak & Comebacks'),
+  rs('CdsneNlNpXw', 'FO502', 'The Hidden Danger in Rice and Wheat: Focus Issues, Iron Loss & Anemia'),
+  rs('rb9536WrfDA', 'FO501', 'Indian Diet Problem: Low Protein, High Calories & Muscle Loss — Prashant Desai'),
 
-// Set to false to hide the Stills section (only show it if the photos are strong).
-export const showStills = true
+  daud(1, 'Sach ka Samna'),
+  daud(2, 'Shadyantra'),
+  daud(3, 'Duvidha'),
+  daud(4, 'Grahon Ka Khel'),
+  daud(5, 'Khulasa'),
+  daud(6, 'Finally Actress Mil Gayi'),
 
-export const stills = Array.from({ length: 8 }, (_, i) => `/media/stills/still-${String(i + 1).padStart(2, '0')}.jpg`)
-
-export const beforeAfter = {
-  enabled: true, // set to false until the client OKs showing raw footage
-  caption: 'Raw camera frame vs. the final grade.',
-  before: '/media/before-after/before.jpg',
-  after: '/media/before-after/after.jpg',
-}
-
-export const testimonials: { quote: string; name: string; role: string }[] = [
-  // { quote: 'TODO', name: 'TODO', role: 'TODO' },
+  // TODO: real BeerBiceps + freelance links. These two are sample placeholders.
+  { id: 'bb-01', client: 'beerbiceps', title: 'BeerBiceps edit (link coming soon)', role: 'Editor', placeholder: true },
+  { id: 'fl-01', client: 'freelance', title: 'Freelance edit (link coming soon)', role: 'Editor', placeholder: true },
 ]

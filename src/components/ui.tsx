@@ -1,38 +1,33 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, type ReactNode } from 'react'
-import { sequence, type SectionId } from '../content/sequence'
 import { useScrollLock } from '../lib/hooks'
 import { blip } from '../lib/sound'
 import { cx } from '../lib/util'
 
-/** Section heading: clip index + transition name, then the display title. */
-export function SectionHead({ id, title, intro, className }: { id: SectionId; title: ReactNode; intro?: ReactNode; className?: string }) {
-  const i = sequence.findIndex((s) => s.id === id)
-  const s = sequence[i]
+/** Reference-style heading: a short orange rule + orange kicker, then the big title. */
+export function SectionHead({ kicker, title, intro, className, light }: { kicker: string; title: ReactNode; intro?: ReactNode; className?: string; light?: boolean }) {
   return (
-    <header className={cx('mb-10 max-w-3xl md:mb-14', className)}>
-      <motion.p
-        className="mono mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs uppercase text-dim"
-        initial={{ opacity: 0, x: -12 }}
+    <header className={cx('mb-10 max-w-3xl md:mb-12', className)}>
+      <motion.div
+        className="mb-4 flex items-center gap-5"
+        initial={{ opacity: 0, x: -20 }}
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true, margin: '-10% 0px' }}
-        transition={{ duration: 0.35 }}
+        transition={{ duration: 0.45 }}
       >
-        <span className="text-accent">{String(i + 1).padStart(2, '0')}</span>
-        <span>{s.clip}</span>
-        <span aria-hidden className="h-px w-6 bg-line" />
-        <span className="rounded border border-line px-1.5 py-0.5 normal-case text-faint">{s.transition}</span>
-      </motion.p>
+        <span aria-hidden className="h-0.5 w-10 bg-orange" />
+        <span className="text-[1.15rem] font-medium text-orange">{kicker}</span>
+      </motion.div>
       <motion.h2
-        className="display text-[clamp(2.6rem,7vw,5.5rem)]"
-        initial={{ opacity: 0, y: 24 }}
+        className={cx('text-[clamp(2.6rem,6vw,4.3rem)] font-semibold leading-[1.15] tracking-[-0.02em]', light ? 'text-white' : 'text-navy')}
+        initial={{ opacity: 0, y: 28 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-10% 0px' }}
-        transition={{ duration: 0.45, ease: [0.2, 0.7, 0.1, 1] }}
+        transition={{ duration: 0.55, ease: [0.2, 0.7, 0.1, 1] }}
       >
         {title}
       </motion.h2>
-      {intro && <p className="mt-5 max-w-xl text-dim">{intro}</p>}
+      {intro && <p className="mt-4 max-w-xl text-lg text-slate">{intro}</p>}
     </header>
   )
 }

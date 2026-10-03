@@ -68,7 +68,7 @@ function ReelPlayer({ onClose }: { onClose: () => void }) {
         src={profile.showreel}
         poster={profile.showreelPoster}
         autoPlay
-        className="aspect-video w-full bg-black"
+        className="aspect-video max-h-[72svh] w-full bg-black object-contain"
         onClick={toggle}
         onTimeUpdate={(e) => setT(e.currentTarget.currentTime)}
         onLoadedMetadata={(e) => setDur(e.currentTarget.duration)}
@@ -83,11 +83,11 @@ function ReelPlayer({ onClose }: { onClose: () => void }) {
           onClick={toggle}
           data-autofocus
           aria-label={playing ? 'Pause' : 'Play'}
-          className="grid size-11 place-items-center rounded-full bg-accent text-white"
+          className="grid size-11 place-items-center rounded-full bg-orange text-white"
         >
           {playing ? <Icon.pause className="size-4" /> : <Icon.play className="size-4" />}
         </button>
-        <span className="mono text-sm tabular-nums text-accent">{timecode(t)}</span>
+        <span className="mono text-sm tabular-nums text-orange">{timecode(t)}</span>
         <label className="order-last w-full sm:order-none sm:w-auto sm:flex-1">
           <span className="sr-only">Scrub reel</span>
           <input
@@ -97,11 +97,11 @@ function ReelPlayer({ onClose }: { onClose: () => void }) {
             step={1 / FPS}
             value={t}
             onChange={(e) => v.current && (v.current.currentTime = +e.target.value)}
-            className="h-11 w-full accent-[var(--color-accent)]"
+            className="h-11 w-full accent-[var(--color-orange)]"
           />
         </label>
         <span className="mono text-sm tabular-nums text-faint">{timecode(dur)}</span>
-        {rate > 1 && <span className="mono rounded bg-accent/20 px-1.5 text-xs text-accent">{rate}×</span>}
+        {rate > 1 && <span className="mono rounded bg-orange/20 px-1.5 text-xs text-orange">{rate}×</span>}
         <p className="mono ml-auto hidden text-xs text-faint lg:block">J ◂ · K ■ · L ▸ · Space · ← →</p>
       </div>
     </div>
