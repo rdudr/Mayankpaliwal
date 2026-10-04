@@ -10,7 +10,8 @@ import Checklist from './dev/Checklist'
 import './index.css'
 
 // Visit /?checklist to see which real files are still missing.
-const showChecklist = new URLSearchParams(location.search).has('checklist')
+const q = new URLSearchParams(location.search)
+const showChecklist = q.has('checklist')
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>{showChecklist ? <Checklist /> : <App />}</React.StrictMode>,

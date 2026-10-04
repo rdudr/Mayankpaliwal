@@ -46,6 +46,12 @@ Sounds (lib/sound.ts) follow the reference's cues but are synthesised in WebAudi
    grey fields, socials, orange Submit → opens mailto). Scene: character on
    parcel boxes with floating envelopes. Footer.
 
+Character: public/models/editor.glb — "Business Man" by Quaternius (CC0,
+poly.pizza/m/JFrLIKqvCH). scene/Character.tsx plays its Idle clip and aims limbs
+in code for every pose (sit/type/mouse/wave/fall/float); same props as before.
+Never swap in the reference repo's purchased models (no licence) — the user has
+asked repeatedly; the answer stays no unless they show a purchase/permission.
+
 Loader: clapperboard logo + "rendering" timeline (clips land, waveform, playhead).
 Logo: clapperboard with play button (src/components/Logo.tsx) — NOT the reference's cube.
 Nav: grey sound toggle + orange menu button → white slide-in menu.

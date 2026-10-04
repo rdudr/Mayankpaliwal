@@ -48,3 +48,8 @@ still missing.
 ## 4. Deploy
 Push to GitHub and import the repo in Vercel (framework preset: Vite).
 Build command `npm run build`, output folder `dist`.
+
+## Credits
+3D character: "Business Man" from the Ultimate Modular Men Pack by Quaternius —
+public domain (CC0), https://poly.pizza/m/JFrLIKqvCH. File: `public/models/editor.glb`.
+All other 3D scenes are built in code (`src/scene/`).
