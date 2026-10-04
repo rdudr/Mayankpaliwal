@@ -114,6 +114,10 @@ export const projects: Project[] = [
   rs('CdsneNlNpXw', 'FO502', 'The Hidden Danger in Rice and Wheat: Focus Issues, Iron Loss & Anemia'),
   rs('rb9536WrfDA', 'FO501', 'Indian Diet Problem: Low Protein, High Calories & Muscle Loss — Prashant Desai'),
 
+  // Instagram reels — thumbnails saved in /media/projects/<client>/<id>.jpg (Instagram's image links expire)
+  { id: 'rs-smuggling', client: 'raj-shamani', episode: 'REEL', title: 'Why Smuggling Happens — Utkarsh Dave', role: 'Editor', link: 'https://www.instagram.com/reel/DP53WW8Er2r/' },
+  { id: 'bb-bhuvi', client: 'beerbiceps', episode: 'REEL', title: 'Bhuvneshwar Kumar on His Crazy Cricket Debut', role: 'Editor', link: 'https://www.instagram.com/reel/DXqrk1BDLHF/' },
+
   daud(1, 'Sach ka Samna'),
   daud(2, 'Shadyantra'),
   daud(3, 'Duvidha'),
@@ -121,7 +125,6 @@ export const projects: Project[] = [
   daud(5, 'Khulasa'),
   daud(6, 'Finally Actress Mil Gayi'),
 
-  // TODO: real BeerBiceps + freelance links. These two are sample placeholders.
-  { id: 'bb-01', client: 'beerbiceps', title: 'BeerBiceps edit (link coming soon)', role: 'Editor', placeholder: true },
+  // TODO: real freelance links. This one is a sample placeholder.
   { id: 'fl-01', client: 'freelance', title: 'Freelance edit (link coming soon)', role: 'Editor', placeholder: true },
 ]

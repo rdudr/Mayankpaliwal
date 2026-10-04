@@ -21,15 +21,37 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   )
 }
 
-/** YouTube stays behind a click-to-load facade (no iframe until asked). Self-hosted episodes play inline. */
+/** YouTube and Instagram stay behind click-to-load facades (no iframe until asked). Self-hosted episodes play inline. */
 function ProjectBody({ p, onClose }: { p: ProjectView; onClose: () => void }) {
   const [loaded, setLoaded] = useState(false)
   const external = p.link?.startsWith('http') ? p.link : ''
 
   return (
     <div className="text-navy">
-      <div className="relative flex aspect-video max-h-[70svh] w-full items-center justify-center bg-black">
-        {p.yt && loaded ? (
+      <div
+        className={
+          p.ig && loaded
+            ? 'relative flex h-[min(78svh,780px)] w-full items-start justify-center bg-black pt-14'
+            : 'relative flex aspect-video max-h-[70svh] w-full items-center justify-center bg-black'
+        }
+      >
+        {p.ig && loaded ? (
+          // Instagram's own player — vertical, so the frame gets taller once it loads
+          <iframe
+            className="h-full w-full max-w-[400px] rounded-lg bg-white"
+            src={`https://www.instagram.com/reel/${p.ig}/embed/`}
+            title={p.title}
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+          />
+        ) : p.ig ? (
+          <button onClick={() => setLoaded(true)} className="group absolute inset-0" aria-label={`Play ${p.title}`} data-autofocus>
+            <Img src={p.thumb} alt="" loading="eager" className="size-full object-cover" />
+            <span className="absolute left-1/2 top-1/2 grid size-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[linear-gradient(45deg,#f9a825,#e91e63_55%,#7b1fa2)] text-white shadow-xl transition-transform group-hover:scale-110">
+              <Icon.play className="ml-1 size-8" />
+            </span>
+          </button>
+        ) : p.yt && loaded ? (
           <iframe
             className="absolute inset-0 size-full"
             src={`https://www.youtube-nocookie.com/embed/${p.yt}?autoplay=1&rel=0`}
@@ -71,7 +93,7 @@ function ProjectBody({ p, onClose }: { p: ProjectView; onClose: () => void }) {
             rel="noreferrer"
             className="btn-orange inline-flex h-12 items-center gap-2 justify-self-start px-6"
           >
-            {p.yt ? 'Watch on YouTube' : 'Open on Instagram'} <Icon.external className="size-4" />
+            {p.yt ? 'Watch on YouTube' : p.ig ? 'Watch on Instagram' : 'Open on Instagram'} <Icon.external className="size-4" />
           </a>
         )}
       </div>

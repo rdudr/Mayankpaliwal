@@ -21,6 +21,10 @@ export function youtubeId(url: string) {
   return m?.[1]
 }
 
+export function instagramId(url: string) {
+  return url.match(/instagram\.com\/(?:reel|p)\/([\w-]+)/)?.[1]
+}
+
 export const clientMeta: Record<Client, { label: string; bin: string; color: string }> = {
   'raj-shamani': { label: 'Raj Shamani', bin: 'RAJ_SHAMANI', color: 'var(--c-mango)' },
   beerbiceps: { label: 'BeerBiceps', bin: 'BEERBICEPS', color: 'var(--c-rose)' },

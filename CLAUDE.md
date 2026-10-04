@@ -66,7 +66,12 @@ Deploy target: Vercel.
 - Daud EP01–06 self-hosted in public/media/projects/daud (720p ~5–10 MB each,
   4s previews, thumbnails). Raw originals in "Resume Videos/" (git-ignored).
 - No showreel yet: "Watch reel" plays Daud EP01 until /media/reel/showreel.mp4 exists.
-- BeerBiceps + Freelance bins hold one placeholder card each (placeholder: true).
+- Instagram reels: link in site.ts (episode 'REEL'); cover saved locally as
+  /media/projects/<client>/<id>.jpg (IG image URLs expire); plays in IG's embed.
+  BeerBiceps: DXqrk1BDLHF (Bhuvi debut, posted 28 Apr 2026 by @ranveerallahbadia).
+  Raj Shamani: DP53WW8Er2r (Smuggling, @figuringout.co) — user listed it as
+  BeerBiceps but it's posted by Raj's Figuring Out page, so it's in Raj's bin.
+- Freelance bin holds one placeholder card (placeholder: true).
 
 ## Performance + accessibility floor
 Respect prefers-reduced-motion (no idle animation, instant loader). Keyboard focus
@@ -75,5 +80,6 @@ visible. Responsive down to 360px; scene sits below text on phones.
 ## Open items to ask Rishabh about
 - What he did at BeerBiceps
 - 2–3 freelance client/project types for 2021–2025
-- BeerBiceps video links; real skill levels; confirm tool list
+- BeerBiceps reel is dated Apr 2026 but his BeerBiceps period reads Feb–May 2025 — confirm
+- More BeerBiceps links; real skill levels; confirm tool list
 - Any testimonials; a proper 60–90s showreel
