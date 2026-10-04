@@ -96,12 +96,13 @@ function WaveScreen(p: JSX.IntrinsicElements['group']) {
   )
 }
 
+// Spots around the tube, ordered so any number of logos stays balanced left/right
 const logoSpots: [number, number, number][] = [
   [-1.75, 2.85, 0.9],
-  [-1.95, 1.55, 1.25],
-  [-1.1, 3.75, 1.3],
-  [1.45, 3.45, 1.35],
+  [1.55, 3.3, 1.35],
+  [-1.6, 1.45, 1.35],
   [1.75, 2.05, 1.65],
+  [-1.1, 3.75, 1.3],
   [1.05, 0.95, 1.9],
 ]
 

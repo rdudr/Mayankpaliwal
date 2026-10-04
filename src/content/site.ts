@@ -20,7 +20,7 @@ export const profile = {
   about:
     'Video editor, filmmaker and storyteller from India, cutting since 2021. Today I edit long-form podcast episodes for Raj Shamani’s Figuring Out; before that BeerBiceps, and years of freelance work — including the Daud behind-the-scenes series.',
   // Shown as the floating logos in the lab and as tool chips. Confirm this list with Mayank.
-  tools: ['Premiere Pro', 'After Effects', 'Photoshop', 'Illustrator', 'Final Cut Pro', 'DaVinci Resolve'],
+  tools: ['Premiere Pro', 'After Effects', 'Photoshop'],
   portrait: '/media/portrait/mayank.jpg', // square, ~600px (About page profile panel)
   showreel: '/media/reel/showreel.mp4', // until a reel exists, Daud EP01 plays instead
   showreelPoster: '/media/reel/showreel-poster.jpg',

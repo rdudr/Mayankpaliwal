@@ -81,5 +81,5 @@ visible. Responsive down to 360px; scene sits below text on phones.
 - What he did at BeerBiceps
 - 2–3 freelance client/project types for 2021–2025
 - BeerBiceps reel is dated Apr 2026 but his BeerBiceps period reads Feb–May 2025 — confirm
-- More BeerBiceps links; real skill levels; confirm tool list
+- More BeerBiceps links; real skill levels (tools confirmed: Premiere Pro, After Effects, Photoshop)
 - Any testimonials; a proper 60–90s showreel
