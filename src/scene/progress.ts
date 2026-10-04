@@ -9,7 +9,7 @@ export const scroll = { s: 0 }
  * Scrolling back to the top sets target = 0 and it plays in reverse.
  */
 export const trans = { value: 0, target: 0 }
-export const TRANS_SECONDS = 1.6
+export const TRANS_SECONDS = 1.0 // the reference's fall is quick — about a second end to end
 
 /** Camera is on the contact scene (switched while the projects page hides the canvas). */
 export const cam = { contact: false }
@@ -26,9 +26,12 @@ export const cursor = { x: 0, y: 0, active: false }
 // The lab sits directly below the room — he falls straight down into the tube.
 export const LAB_Y = -14
 export const LAB_Z = 0.3
-/** Height at which he turns from clay into a wireframe hologram. */
-export const WIRE_Y = -6.2
+/** He turns from clay into a wireframe hologram as he passes into the top of the tube. */
+export const WIRE_Y = LAB_Y + 3.3
 export const CONTACT_X = 80
+
+/** The cream "sheet" behind the home page — slides up (hard edge) over the lab's blue. */
+export const backdrop = { sheet: null as HTMLDivElement | null }
 
 export const clamp01 = (x: number) => Math.min(1, Math.max(0, x))
 export const easeInOut = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2)

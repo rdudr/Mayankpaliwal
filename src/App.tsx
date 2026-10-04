@@ -10,7 +10,7 @@ import Work from './components/Work'
 import { useReducedMotion } from './lib/hooks'
 import Pager from './components/Pager'
 import { goTo } from './lib/pager'
-import { intro } from './scene/progress'
+import { backdrop, intro } from './scene/progress'
 
 // three.js + the scenes load in their own chunk while the loader plays.
 const Scene = lazy(() => import('./scene/Scene'))
@@ -25,6 +25,13 @@ export default function App() {
     <ReelProvider>
       <ProjectProvider>
         <button onClick={() => goTo('work')} className="skip-link">Skip to projects</button>
+        {/* Backdrop behind the 3D canvas: lab blue (four-corner gradient, like the
+            reference) with the cream home "sheet" on top that slides up during the fall. */}
+        <div aria-hidden className="fixed inset-0 -z-10 overflow-hidden">
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#000e2e,#004db3)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#002757,#009dff)] [mask-image:linear-gradient(to_right,transparent,black)]" />
+          <div ref={(el) => (backdrop.sheet = el)} className="absolute inset-0 bg-cream will-change-transform" />
+        </div>
         <Suspense fallback={null}>
           <Scene reduced={reduced} onReady={onReady} />
         </Suspense>

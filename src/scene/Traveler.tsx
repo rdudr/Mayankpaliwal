@@ -64,6 +64,7 @@ export default function Traveler({ reduced }: { reduced: boolean }) {
   const [stage, setStage] = useState<Stage>('sit')
   const rig = useRef(newRig('type'))
   const holoRig = useRef(newRig('float'))
+  const fallRig = useRef({ ...newRig('fall'), scared: true })
   const sched = useRef({ introT0: -1, act: 'type' as 'type' | 'mouse' | 'fast', until: 0, mouseAt: 3, fastAt: 9, clickAt: 0, blinkAt: 2.5, popupT0: -10 })
 
   const chairRoot = useRef<THREE.Group>(null)
@@ -177,7 +178,8 @@ export default function Traveler({ reduced }: { reduced: boolean }) {
     const y = THREE.MathUtils.lerp(SEAT_Y, LAND_Y, easeInOut(f)) + hop
     if (faller.current) {
       faller.current.position.y = y
-      faller.current.rotation.y = FACE_DESK + easeInOut(f) * (Math.PI * 2 - FACE_DESK + FACE_LAB_CAMERA)
+      // turns to face us as he leaves the chair (like the reference), then holds
+      faller.current.rotation.y = FACE_DESK + easeOut(clamp01(f / 0.3)) * (Math.PI * 2 - FACE_DESK + (FACE_CAMERA + FACE_LAB_CAMERA) / 2)
     }
     if (scan.current) {
       scan.current.visible = stage === 'fall' && y < WIRE_Y && y + H > WIRE_Y
@@ -217,8 +219,8 @@ export default function Traveler({ reduced }: { reduced: boolean }) {
 
       {stage === 'fall' && (
         <group ref={faller} position={[0, SEAT_Y, LAB_Z]} scale={1.18}>
-          <Character pose="stand" armsUp={!reduced} still={reduced} clip={clayClip} />
-          <Character pose="stand" armsUp={!reduced} still={reduced} holo clip={holoClip} />
+          <Character pose="stand" rig={fallRig} still={reduced} clip={clayClip} />
+          <Character pose="stand" rig={fallRig} still={reduced} holo clip={holoClip} />
         </group>
       )}
 
@@ -231,11 +233,11 @@ export default function Traveler({ reduced }: { reduced: boolean }) {
       {/* the scan line: a glowing ring + soft disc at the transform height */}
       <group ref={scan} position={[0, WIRE_Y, LAB_Z]} visible={false}>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.62, 0.025, 8, 64]} />
+          <torusGeometry args={[0.96, 0.025, 8, 64]} />
           <meshBasicMaterial color="#8ee2ff" toneMapped={false} />
         </mesh>
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[0.62, 48]} />
+          <circleGeometry args={[0.96, 48]} />
           <meshBasicMaterial color="#5fd2ff" transparent opacity={0.25} depthWrite={false} side={THREE.DoubleSide} />
         </mesh>
       </group>

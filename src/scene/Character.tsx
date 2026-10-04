@@ -10,8 +10,8 @@ type Pose = 'sit' | 'stand'
  */
 export type CharRig = {
   /** type: both hands typing · mouse: left hand on the mouse · fast: quick typing, head to the timeline monitor
-   *  wave: turned to camera, right arm waving · float: drifting in the tube · rest: arms down */
-  mode: 'type' | 'mouse' | 'fast' | 'wave' | 'float' | 'rest'
+   *  wave: turned to camera, right arm waving · fall: arms flailing · float: drifting in the tube · rest: arms down */
+  mode: 'type' | 'mouse' | 'fast' | 'wave' | 'fall' | 'float' | 'rest'
   blink: boolean
   scared: boolean
 }
@@ -83,6 +83,9 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
           break
         case 'wave':
           T = [0, -0.14, 0.15, 2.55 + Math.sin(t * 7) * 0.38, 0, -0.06]
+          break
+        case 'fall':
+          T = [0.35 + Math.sin(t * 13) * 0.2, -2.1 + Math.sin(t * 15) * 0.35, 0.35 + Math.sin(t * 13 + 2) * 0.2, 2.1 - Math.sin(t * 15 + 1) * 0.35, 0, -0.18]
           break
         case 'float':
           T = [0.2 + Math.sin(t * 1.1) * 0.15, -0.95 + Math.sin(t * 1.3) * 0.18, 0.2 + Math.sin(t * 1.2 + 1) * 0.15, 0.95 - Math.sin(t * 1.4 + 0.5) * 0.18, Math.sin(t * 0.5) * 0.15, -0.05 + Math.sin(t * 0.9) * 0.05]

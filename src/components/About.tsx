@@ -1,19 +1,27 @@
 import { motion } from 'framer-motion'
-import { useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { experience, profile, skills } from '../content/site'
 import { useReducedMotion } from '../lib/hooks'
+import { usePage } from '../lib/pager'
+import { TRANS_SECONDS } from '../scene/progress'
 import { clientMeta, tbc } from '../lib/util'
 
 /** Clipped-corner HUD panel with an optional tab label, like a sci-fi readout. */
-function Panel({ tab, children, delay = 0 }: { tab?: string; children: ReactNode; delay?: number }) {
+/** True once he has landed in the tube — the HUD then "draws" itself in, like the reference. */
+const Shown = createContext(true)
+
+const hidden = { opacity: 0, clipPath: 'inset(0% 100% 100% 0%)' }
+const drawn = { opacity: 1, clipPath: 'inset(0% 0% 0% 0%)' }
+
+function Panel({ tab, children, order = 0 }: { tab?: string; children: ReactNode; order?: number }) {
+  const shown = useContext(Shown)
   const reduced = useReducedMotion()
   return (
     <motion.div
       className="relative"
-      initial={reduced ? false : { opacity: 0, x: -40 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, margin: '-12% 0px' }}
-      transition={{ duration: 0.6, delay, ease: [0.2, 0.7, 0.1, 1] }}
+      initial={reduced ? false : hidden}
+      animate={shown || reduced ? drawn : hidden}
+      transition={{ duration: shown ? 0.55 : 0.2, delay: shown ? order * 0.14 : 0, ease: [0.2, 0.7, 0.1, 1] }}
     >
       {tab && (
         <div className="hud-tab relative z-10 -mb-[2px] inline-block bg-holo-line p-[2px] pb-0">
@@ -78,7 +86,15 @@ function Portrait() {
 
 export default function About() {
   const reduced = useReducedMotion()
+  const active = usePage() === 1
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    if (!active) return setShown(false)
+    const t = setTimeout(() => setShown(true), TRANS_SECONDS * 650) // after he lands
+    return () => clearTimeout(t)
+  }, [active])
   return (
+    <Shown.Provider value={shown}>
     <section id="about" aria-labelledby="about-title" className="hud relative min-h-full pb-16 pt-[52svh] text-holo md:pt-28">
       <h2 id="about-title" className="sr-only">About {profile.name}</h2>
       <div className="content-width">
@@ -86,10 +102,9 @@ export default function About() {
           {/* Profile */}
           <motion.div
             className="flex items-stretch"
-            initial={reduced ? false : { opacity: 0, x: -40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            initial={reduced ? false : hidden}
+            animate={shown || reduced ? drawn : hidden}
+            transition={{ duration: shown ? 0.55 : 0.2, ease: [0.2, 0.7, 0.1, 1] }}
           >
             <div className="hud-frame size-32 shrink-0 sm:size-40">
               <div className="hud-inner size-full overflow-hidden">
@@ -112,7 +127,7 @@ export default function About() {
             </div>
           </motion.div>
 
-          <Panel tab="SKILLS">
+          <Panel tab="SKILLS" order={1}>
             <ul className="py-3">
               {skills.map((s, i) => (
                 <li key={s.name} className={`flex items-center gap-4 px-5 py-2 sm:px-6 ${i % 2 ? '' : 'bg-[#2d88dd18]'}`}>
@@ -121,9 +136,8 @@ export default function About() {
                     <motion.span
                       className="block h-full bg-gradient-to-r from-[#2d88dd] to-holo"
                       initial={reduced ? { width: `${s.level}%` } : { width: '0%' }}
-                      whileInView={{ width: `${s.level}%` }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 1.1, delay: 0.15 + i * 0.08, ease: 'easeOut' }}
+                      animate={{ width: shown || reduced ? `${s.level}%` : '0%' }}
+                      transition={{ duration: shown ? 1 : 0.2, delay: shown ? 0.35 + i * 0.07 : 0, ease: 'easeOut' }}
                     />
                   </span>
                 </li>
@@ -131,7 +145,7 @@ export default function About() {
             </ul>
           </Panel>
 
-          <Panel tab="TOOLS">
+          <Panel tab="TOOLS" order={2}>
             <ul className="flex flex-wrap gap-2 p-5 sm:p-6">
               {profile.tools.map((t) => (
                 <li key={t} className="border border-holo/40 bg-[#2d88dd22] px-3 py-1 text-sm text-white">{t}</li>
@@ -139,11 +153,11 @@ export default function About() {
             </ul>
           </Panel>
 
-          <Panel tab="ABOUT">
+          <Panel tab="ABOUT" order={3}>
             <p className="p-5 text-base leading-relaxed text-[#bfe8ff] sm:p-6">{profile.about}</p>
           </Panel>
 
-          <Panel tab="EXPERIENCE">
+          <Panel tab="EXPERIENCE" order={4}>
             <ol className="divide-y divide-holo/15">
               {experience.map((e) => (
                 <li key={e.title} className={`flex gap-4 px-5 py-4 sm:px-6 ${'partOf' in e ? 'pl-10 sm:pl-12' : ''}`}>
@@ -165,5 +179,6 @@ export default function About() {
         </div>
       </div>
     </section>
+    </Shown.Provider>
   )
 }
