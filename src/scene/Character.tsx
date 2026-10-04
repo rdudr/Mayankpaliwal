@@ -3,6 +3,7 @@ import { useFrame, type GroupProps } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
+import { hand } from './progress'
 
 /**
  * The editor: "Business Man" by Quaternius (Ultimate Modular Men Pack,
@@ -38,6 +39,8 @@ type Props = GroupProps & {
   clip?: THREE.Plane[]
   /** When given, this drives the pose instead of the simple flags above. */
   rig?: React.MutableRefObject<CharRig>
+  /** Publish his right-wrist position while using the mouse (the desk mouse follows it). */
+  trackHand?: boolean
 }
 
 // The model is 1.82 units tall; scale it to the size the scenes were laid out for.
@@ -75,10 +78,11 @@ function targetDirs(mode: CharRig['mode'], sitting: boolean, t: number): Dirs {
       d.LowerArmR = v(0.18, 0.02 + s(t * 24 + 1.3) * 0.12, 1)
       break
     case 'mouse':
-      d.UpperArmL = v(0.4, -0.75, 0.45)
-      d.LowerArmL = v(0.15, -0.05 + s(t * 5) * 0.03, 1)
-      d.UpperArmR = v(-0.12, -0.75, 0.55)
-      d.LowerArmR = v(0.18, 0.02, 1)
+      // right hand out to the mouse (his right = -x), small scrolling/clicking movements
+      d.UpperArmR = v(-0.85, -0.62, 0.38)
+      d.LowerArmR = v(-0.75 + s(t * 2.2) * 0.12, -0.18, 0.75 + s(t * 3.1) * 0.08)
+      d.UpperArmL = v(0.12, -0.75, 0.55)
+      d.LowerArmL = v(-0.18, 0.02, 1)
       break
     case 'wave':
       d.UpperArmR = v(-0.75, 0.6, 0.2)
@@ -115,9 +119,9 @@ function headTarget(mode: CharRig['mode'], t: number): [number, number] {
     case 'type':
       return [Math.sin(t * 0.6) * 0.08, 0.22]
     case 'fast':
-      return [-0.42, 0.18] // toward the timeline monitor
+      return [0.42, 0.18] // toward the timeline monitor (his left)
     case 'mouse':
-      return [0.32, 0.2] // toward the Program monitor
+      return [-0.32, 0.2] // toward the Program monitor (his right)
     case 'wave':
       return [0, -0.05]
     case 'fall':
@@ -151,7 +155,7 @@ function aim(bone: THREE.Object3D, dirWorld: THREE.Vector3) {
   bone.updateWorldMatrix(false, true)
 }
 
-export default function Character({ pose, holo, typing, wave, still, armsUp, clip, rig, ...group }: Props) {
+export default function Character({ pose, holo, typing, wave, still, armsUp, clip, rig, trackHand, ...group }: Props) {
   const { scene, animations } = useGLTF(MODEL)
   const model = useMemo(() => clone(scene), [scene])
   const root = useRef<THREE.Group>(null)
@@ -177,7 +181,7 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
 
   const bones = useMemo(() => {
     const get = (n: string) => model.getObjectByName(n)!
-    return { head: get('Head'), ...Object.fromEntries(LIMBS.map((n) => [n, get(n)])) } as Record<Limb | 'head', THREE.Object3D>
+    return { head: get('Head'), wristR: get('WristR'), ...Object.fromEntries(LIMBS.map((n) => [n, get(n)])) } as Record<Limb | 'head' | 'wristR', THREE.Object3D>
   }, [model])
 
   // breathing idle from the model's own animation
@@ -187,6 +191,8 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
     if (idle) mixer.clipAction(idle).play()
     return () => void mixer.stopAllAction()
   }, [mixer, animations])
+
+  useEffect(() => () => void (trackHand && (hand.onMouse = false)), [trackHand])
 
   // smoothed limb directions (character space) + head
   const cur = useRef<Partial<Record<Limb, THREE.Vector3>>>({})
@@ -221,6 +227,16 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
     head.current[1] += (tp - head.current[1]) * (1 - Math.exp(-6 * dt))
     _e.set(head.current[1], head.current[0], 0)
     bones.head.quaternion.multiply(_q.setFromEuler(_e))
+
+    if (trackHand) {
+      hand.onMouse = mode === 'mouse'
+      if (hand.onMouse) {
+        bones.wristR.getWorldPosition(_dir)
+        hand.x = _dir.x
+        hand.y = _dir.y
+        hand.z = _dir.z
+      }
+    }
   })
 
   return (

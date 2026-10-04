@@ -3,8 +3,8 @@ import { RoundedBox } from '@react-three/drei/core/RoundedBox'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { bounceScale, desk, trans } from './progress'
-import { drawNote, drawProgram, drawTimeline, makeCanvas } from './textures'
+import { bounceScale, desk, hand, trans } from './progress'
+import { drawNote, drawProgram, drawSocialLogo, drawTimeline, makeCanvas, rr } from './textures'
 
 const WOOD = '#d9b07a'
 const WHITE = '#f6f4f1'
@@ -40,6 +40,114 @@ function Monitor({ draw, ...p }: { draw: (ctx: CanvasRenderingContext2D, w: numb
       <mesh position={[0, -0.66, -0.02]}>
         <boxGeometry args={[0.36, 0.03, 0.22]} />
         <Mat color="#3b3948" />
+      </mesh>
+    </group>
+  )
+}
+
+/** Keyboard with visible keycap rows (drawn once into a texture). */
+function Keyboard(p: JSX.IntrinsicElements['group']) {
+  const tex = useMemo(() => {
+    const W = 720
+    const H = 220
+    const { ctx, tex } = makeCanvas(W, H)
+    ctx.fillStyle = '#d9d7e2'
+    ctx.fillRect(0, 0, W, H)
+    const rows = [14, 14, 13, 12, 8]
+    const pad = 10
+    const kh = (H - pad * 2) / rows.length - 6
+    rows.forEach((n, r) => {
+      const y = pad + r * (kh + 6)
+      if (r === 4) {
+        // bottom row: modifiers + long space bar
+        const widths = [1, 1, 1, 6.5, 1, 1, 1]
+        const unit = (W - pad * 2 - 6 * (widths.length - 1)) / widths.reduce((a, b) => a + b)
+        let x = pad
+        widths.forEach((w) => {
+          ctx.fillStyle = '#f7f6fb'
+          rr(ctx, x, y, unit * w, kh, 6)
+          ctx.fill()
+          x += unit * w + 6
+        })
+        return
+      }
+      const kw = (W - pad * 2 - 6 * (n - 1)) / n
+      for (let i = 0; i < n; i++) {
+        ctx.fillStyle = (r === 0 && (i === 0 || i === n - 1)) || (r === 2 && i === n - 1) ? '#ff923e' : '#f7f6fb'
+        rr(ctx, pad + i * (kw + 6), y, kw, kh, 6)
+        ctx.fill()
+      }
+    })
+    tex.needsUpdate = true
+    return tex
+  }, [])
+  return (
+    <group {...p}>
+      <RoundedBox args={[0.74, 0.035, 0.24]} radius={0.012}>
+        <Mat color="#c9c7d4" rough={0.5} />
+      </RoundedBox>
+      <mesh position={[0, 0.0185, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.7, 0.21]} />
+        <meshStandardMaterial map={tex} roughness={0.6} />
+      </mesh>
+    </group>
+  )
+}
+
+const MOUSE_REST = new THREE.Vector3(0.52, 1.215, -0.1)
+const PAD = { x: 0.52, z: -0.1, w: 0.3, d: 0.28 }
+
+/** Mouse on a pad. While he holds it, it slides along under his right hand (like the reference). */
+function MouseAndPad() {
+  const mouse = useRef<THREE.Group>(null)
+  const target = useMemo(() => new THREE.Vector3(), [])
+  useFrame((_, dt) => {
+    const m = mouse.current
+    if (!m) return
+    if (hand.onMouse) {
+      // palm sits slightly behind the wrist (toward the screen)
+      target.set(
+        THREE.MathUtils.clamp(hand.x, PAD.x - PAD.w / 2 + 0.05, PAD.x + PAD.w / 2 - 0.05),
+        MOUSE_REST.y,
+        THREE.MathUtils.clamp(hand.z - 0.07, PAD.z - PAD.d / 2 + 0.06, PAD.z + PAD.d / 2 - 0.06),
+      )
+    } else target.copy(MOUSE_REST)
+    m.position.lerp(target, 1 - Math.exp(-14 * dt))
+  })
+  return (
+    <>
+      <RoundedBox args={[PAD.w, 0.008, PAD.d]} radius={0.004} position={[PAD.x, 1.204, PAD.z]}>
+        <Mat color="#2d2d38" rough={0.95} />
+      </RoundedBox>
+      <group ref={mouse} position={MOUSE_REST}>
+        <mesh scale={[0.62, 0.38, 1]} position={[0, 0.012, 0]}>
+          <sphereGeometry args={[0.072, 20, 12]} />
+          <Mat color="#f2f1f6" rough={0.35} />
+        </mesh>
+        <mesh position={[0, 0.036, -0.03]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.009, 0.009, 0.012, 12]} />
+          <Mat color="#ff923e" />
+        </mesh>
+      </group>
+    </>
+  )
+}
+
+function WallFrame({ kind, color, size = 0.8, ...p }: { kind: 'youtube' | 'instagram'; color: string; size?: number } & JSX.IntrinsicElements['group']) {
+  const tex = useMemo(() => {
+    const c = makeCanvas(256, 256)
+    drawSocialLogo(c.ctx, 256, kind)
+    c.tex.needsUpdate = true
+    return c.tex
+  }, [kind])
+  return (
+    <group {...p}>
+      <RoundedBox args={[size + 0.12, size + 0.12, 0.08]} radius={0.06}>
+        <Mat color={color} />
+      </RoundedBox>
+      <mesh position={[0, 0, 0.045]}>
+        <planeGeometry args={[size, size]} />
+        <meshStandardMaterial map={tex} roughness={0.8} />
       </mesh>
     </group>
   )
@@ -195,14 +303,8 @@ export default function Room() {
       <Monitor draw={drawTimeline} position={[-0.64, 1.88, -0.82]} rotation={[0, 0.18, 0]} />
       <Monitor draw={(c, w, h, t) => drawProgram(c, w, h, frames.current[desk.frame % 6] ?? null, t)} position={[0.64, 1.88, -0.82]} rotation={[0, -0.18, 0]} />
 
-      {/* keyboard + mouse */}
-      <RoundedBox args={[0.72, 0.035, 0.22]} radius={0.012} position={[0, 1.22, -0.12]}>
-        <Mat color="#e9e7f0" />
-      </RoundedBox>
-      <mesh position={[0.55, 1.22, -0.1]} scale={[0.7, 0.35, 1]}>
-        <sphereGeometry args={[0.07, 16, 10]} />
-        <Mat color="#e9e7f0" />
-      </mesh>
+      <Keyboard position={[0, 1.215, -0.12]} />
+      <MouseAndPad />
       <Clapper position={[-1.05, 1.2, -0.45]} rotation={[0, 0.5, 0]} />
       {/* speaker */}
       <RoundedBox args={[0.26, 0.38, 0.24]} radius={0.04} position={[1.18, 1.39, -0.72]} rotation={[0, -0.4, 0]}>
@@ -254,21 +356,12 @@ export default function Room() {
         <Note lines={['EP 04', 'colour pass', 'B-roll ✓']} color="#fbfaf6" position={[0.42, -0.12, 0.07]} rotation={[0, 0, -0.06]} />
       </group>
       </Bounce>
-      {/* picture frame with a film-frame icon */}
+      {/* framed platform logos — YouTube (right) and Instagram (above the shelf) */}
       <Bounce pivot={[2.4, 2.45, -1.2]} order={2}>
-      <group position={[2.4, 2.45, -1.2]} rotation={[0, -0.45, 0]}>
-        <RoundedBox args={[0.9, 0.7, 0.08]} radius={0.06}>
-          <Mat color="#8fb4e3" />
-        </RoundedBox>
-        <mesh position={[0, 0, 0.045]}>
-          <planeGeometry args={[0.7, 0.5]} />
-          <Mat color="#dfe9f6" />
-        </mesh>
-        <mesh position={[0.02, 0, 0.05]} rotation={[0, 0, -Math.PI / 2]}>
-          <circleGeometry args={[0.14, 3]} />
-          <Mat color="#8fb4e3" />
-        </mesh>
-      </group>
+        <WallFrame kind="youtube" color="#8fb4e3" position={[2.4, 2.45, -1.2]} rotation={[0, -0.45, 0]} />
+      </Bounce>
+      <Bounce pivot={[-1.75, 3.32, -1.55]} order={1}>
+        <WallFrame kind="instagram" color="#e9d3a6" size={0.52} position={[-1.75, 3.32, -1.55]} rotation={[0, 0.12, 0]} />
       </Bounce>
       <Bounce pivot={[2.25, 0, 1.05]} order={3}>
         <Plant position={[2.25, 0, 1.05]} />

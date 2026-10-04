@@ -22,6 +22,9 @@ export const intro = { pending: false }
 /** Which of his episodes the desk's Program monitor is showing (he "clicks" through them). */
 export const desk = { frame: 0 }
 
+/** His right wrist in world space while he's using the mouse — the desk mouse follows it. */
+export const hand = { x: 0, y: 0, z: 0, onMouse: false }
+
 /** Cursor position, -0.5…0.5 from screen centre (desktop only) — drives camera parallax. */
 export const cursor = { x: 0, y: 0, active: false }
 
@@ -50,4 +53,4 @@ export const bounceScale = (v: number, order: number) => 1 - backIn(clamp01((v -
 
 // Dev-only handle for frame-by-frame comparison against the reference
 // (e.g. __mp.trans.value = __mp.trans.target = 0.5 freezes the fall halfway).
-if (import.meta.env.DEV) Object.assign(window, { __mp: { trans, cam, intro, desk } })
+if (import.meta.env.DEV) Object.assign(window, { __mp: { trans, cam, intro, desk, hand } })

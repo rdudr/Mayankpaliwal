@@ -214,7 +214,7 @@ export default function Traveler({ reduced }: { reduced: boolean }) {
           <Chair rotation={[0, -Math.PI, 0]} />
           {stage === 'sit' && (
             <group ref={drop}>
-              <Character pose="sit" rig={rig} still={reduced} position={[0, 0.25, 0.1]} />
+              <Character pose="sit" rig={rig} still={reduced} trackHand position={[0, 0.25, 0.1]} />
             </group>
           )}
         </group>

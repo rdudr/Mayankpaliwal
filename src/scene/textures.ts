@@ -222,3 +222,46 @@ export function drawNote(ctx: Ctx, w: number, h: number, lines: string[], color:
   ctx.font = `500 ${h * 0.13}px Poppins, sans-serif`
   lines.forEach((l, i) => ctx.fillText(l, w * 0.1, h * (0.3 + i * 0.2)))
 }
+
+/** Wall-frame art: the YouTube or Instagram logo, drawn from scratch. */
+export function drawSocialLogo(ctx: Ctx, s: number, kind: 'youtube' | 'instagram') {
+  ctx.fillStyle = '#f7f4ee'
+  ctx.fillRect(0, 0, s, s)
+  if (kind === 'youtube') {
+    const w = s * 0.7
+    const h = w * 0.7
+    ctx.fillStyle = '#ff0033'
+    rr(ctx, (s - w) / 2, (s - h) / 2, w, h, h * 0.28)
+    ctx.fill()
+    ctx.fillStyle = '#ffffff'
+    ctx.beginPath()
+    ctx.moveTo(s * 0.43, s * 0.39)
+    ctx.lineTo(s * 0.43, s * 0.61)
+    ctx.lineTo(s * 0.62, s * 0.5)
+    ctx.closePath()
+    ctx.fill()
+    return
+  }
+  const w = s * 0.66
+  const x = (s - w) / 2
+  const g = ctx.createLinearGradient(x, x + w, x + w, x)
+  g.addColorStop(0, '#feda75')
+  g.addColorStop(0.3, '#fa7e1e')
+  g.addColorStop(0.6, '#d62976')
+  g.addColorStop(0.85, '#962fbf')
+  g.addColorStop(1, '#4f5bd5')
+  ctx.fillStyle = g
+  rr(ctx, x, x, w, w, w * 0.28)
+  ctx.fill()
+  ctx.strokeStyle = '#ffffff'
+  ctx.lineWidth = w * 0.075
+  rr(ctx, x + w * 0.2, x + w * 0.2, w * 0.6, w * 0.6, w * 0.18)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.arc(s / 2, s / 2, w * 0.15, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.fillStyle = '#ffffff'
+  ctx.beginPath()
+  ctx.arc(x + w * 0.69, x + w * 0.31, w * 0.045, 0, Math.PI * 2)
+  ctx.fill()
+}
