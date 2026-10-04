@@ -16,6 +16,8 @@ import { shown } from './textures'
 const MODELS = {
   jake: {
     url: '/models/jake.glb',
+    /** Right palm direction in the rest pose (T-pose: palms face down). */
+    palmRest: [0, -1, 0] as [number, number, number],
     idle: undefined as string | undefined,
     bones: {
       UpperArmL: 'CC_Base_L_Upperarm', LowerArmL: 'CC_Base_L_Forearm',
@@ -27,6 +29,7 @@ const MODELS = {
   },
   business: {
     url: '/models/editor.glb',
+    palmRest: [1, 0, 0] as [number, number, number], // arms down, palms face the body
     idle: 'CharacterArmature|Idle' as string | undefined,
     bones: {
       UpperArmL: 'UpperArmL', LowerArmL: 'LowerArmL', UpperArmR: 'UpperArmR', LowerArmR: 'LowerArmR',
@@ -188,6 +191,32 @@ function aim(bone: THREE.Object3D, axis: THREE.Vector3, dirWorld: THREE.Vector3)
   bone.updateWorldMatrix(false, true)
 }
 
+const _a = new THREE.Vector3()
+const _n = new THREE.Vector3()
+const _f = new THREE.Vector3()
+
+/**
+ * Twist the forearm around its own length so the palm faces `wantWorld`
+ * (aiming alone leaves the twist arbitrary — the wave showed the back of the hand).
+ */
+function facePalm(forearm: THREE.Object3D, axis: THREE.Vector3, handBone: THREE.Object3D, palmLocal: THREE.Vector3, wantWorld: THREE.Vector3) {
+  forearm.updateWorldMatrix(true, true)
+  forearm.getWorldQuaternion(_q)
+  _a.copy(axis).applyQuaternion(_q).normalize()
+  handBone.getWorldQuaternion(_q2)
+  _n.copy(palmLocal).applyQuaternion(_q2)
+  // compare palm and wanted direction in the plane across the forearm
+  _n.addScaledVector(_a, -_n.dot(_a)).normalize()
+  _f.copy(wantWorld).addScaledVector(_a, -wantWorld.dot(_a)).normalize()
+  if (_n.lengthSq() < 1e-6 || _f.lengthSq() < 1e-6) return
+  const angle = Math.atan2(_cur.crossVectors(_n, _f).dot(_a), _n.dot(_f))
+  _q2.setFromAxisAngle(_a, angle)
+  _q.premultiply(_q2)
+  forearm.parent!.getWorldQuaternion(_pq)
+  forearm.quaternion.copy(_pq.invert().multiply(_q))
+  forearm.updateWorldMatrix(false, true)
+}
+
 export default function Character({ pose, holo, typing, wave, still, armsUp, clip, rig, trackHand, ...group }: Props) {
   const { scene, animations } = useGLTF(CFG.url)
   const model = useMemo(() => clone(scene), [scene])
@@ -219,7 +248,10 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
     // rest rotations: models without an idle clip are reset to these every frame,
     // otherwise per-frame offsets (like the head turn) would accumulate and spin
     const rest = new Map([...LIMBS, 'head' as const].map((k) => [map[k], map[k].quaternion.clone()]))
-    return { ...map, axes, rest }
+    // palm normal in the right hand's own space (from the rest pose)
+    model.updateWorldMatrix(true, true)
+    const palm = new THREE.Vector3(...CFG.palmRest).applyQuaternion(map.wristR.getWorldQuaternion(new THREE.Quaternion()).invert())
+    return { ...map, axes, rest, palm }
   }, [model])
 
   // size: scale to TARGET_HEIGHT; when sitting, drop him so his hip joints sit on the seat
@@ -268,6 +300,12 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
       if (!c[limb]) c[limb] = _dir.clone()
       else c[limb]!.lerp(_dir, k).normalize()
       aim(bones[limb], bones.axes.get(limb)!, _dir.copy(c[limb]!).applyQuaternion(_mq).normalize())
+    }
+
+    if (mode === 'wave') {
+      // palm toward whoever he's waving at (his forward, slightly up)
+      _f.set(0, 0.25, 1).applyQuaternion(_mq).normalize()
+      facePalm(bones.LowerArmR, bones.axes.get('LowerArmR')!, bones.wristR, bones.palm, _f.clone())
     }
 
     const [ty, tp] = headTarget(mode, still ? 0 : t)
