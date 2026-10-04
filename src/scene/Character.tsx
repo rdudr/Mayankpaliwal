@@ -216,7 +216,10 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
     const get = (n: string) => model.getObjectByName(n)!
     const map = Object.fromEntries(Object.entries(CFG.bones).map(([k, n]) => [k, get(n)])) as Record<Limb | 'head' | 'wristR', THREE.Object3D>
     const axes = new Map(LIMBS.map((l) => [l, boneAxis(map[l])]))
-    return { ...map, axes }
+    // rest rotations: models without an idle clip are reset to these every frame,
+    // otherwise per-frame offsets (like the head turn) would accumulate and spin
+    const rest = new Map([...LIMBS, 'head' as const].map((k) => [map[k], map[k].quaternion.clone()]))
+    return { ...map, axes, rest }
   }, [model])
 
   // size: scale to TARGET_HEIGHT; when sitting, drop him so his hip joints sit on the seat
@@ -245,8 +248,8 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
   useFrame(({ clock }, dt) => {
     if (!shown(root.current)) return // off-screen: skip animation + IK work
     const t = clock.elapsedTime
-    if (!still) mixer.update(Math.min(dt, 0.05))
-    else mixer.update(0)
+    if (CFG.idle) mixer.update(still ? 0 : Math.min(dt, 0.05))
+    else for (const [bone, q] of bones.rest) bone.quaternion.copy(q)
 
     const mode: CharRig['mode'] = rig ? rig.current.mode : armsUp ? 'fall' : wave ? 'wave' : typing ? 'type' : 'rest'
     const dirs = targetDirs(mode, pose === 'sit', still ? 0 : t)
