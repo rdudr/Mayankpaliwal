@@ -18,28 +18,34 @@ const MODELS = {
     url: '/models/jake.glb',
     /** Right palm direction in the rest pose (T-pose: palms face down). */
     palmRest: [0, -1, 0] as [number, number, number],
+    palmRestL: [0, -1, 0] as [number, number, number],
     idle: undefined as string | undefined,
     bones: {
       UpperArmL: 'CC_Base_L_Upperarm', LowerArmL: 'CC_Base_L_Forearm',
       UpperArmR: 'CC_Base_R_Upperarm', LowerArmR: 'CC_Base_R_Forearm',
       UpperLegL: 'CC_Base_L_Thigh', LowerLegL: 'CC_Base_L_Calf',
       UpperLegR: 'CC_Base_R_Thigh', LowerLegR: 'CC_Base_R_Calf',
-      head: 'CC_Base_Head', wristR: 'CC_Base_R_Hand',
-    },
+      head: 'CC_Base_Head', wristR: 'CC_Base_R_Hand', wristL: 'CC_Base_L_Hand',
+      eyeL: 'CC_Base_L_Eye', eyeR: 'CC_Base_R_Eye',
+    } as Record<string, string>,
   },
   business: {
     url: '/models/editor.glb',
     palmRest: [1, 0, 0] as [number, number, number], // arms down, palms face the body
+    palmRestL: [-1, 0, 0] as [number, number, number],
     idle: 'CharacterArmature|Idle' as string | undefined,
     bones: {
       UpperArmL: 'UpperArmL', LowerArmL: 'LowerArmL', UpperArmR: 'UpperArmR', LowerArmR: 'LowerArmR',
       UpperLegL: 'UpperLegL', LowerLegL: 'LowerLegL', UpperLegR: 'UpperLegR', LowerLegR: 'LowerLegR',
-      head: 'Head', wristR: 'WristR',
-    },
+      head: 'Head', wristR: 'WristR', wristL: 'WristL',
+    } as Record<string, string>,
   },
 }
 const CFG = MODELS.jake
 useGLTF.preload(CFG.url)
+
+/** Height of his hip joints when seated (chair seat top is ~0.12 below). */
+const SEAT_HIP = 0.76
 
 /** Height (in scene units) the character is scaled to, standing. */
 const TARGET_HEIGHT = 2.05
@@ -53,6 +59,9 @@ export type CharRig = {
   mode: 'type' | 'mouse' | 'fast' | 'wave' | 'fall' | 'float' | 'rest'
   blink: boolean
   scared: boolean
+  /** World-space spots for his hands (keyboard / mouse). When set, the arms reach them exactly (IK). */
+  ikL?: THREE.Vector3 | null
+  ikR?: THREE.Vector3 | null
 }
 export const newRig = (mode: CharRig['mode'] = 'type'): CharRig => ({ mode, blink: false, scared: false })
 
@@ -172,6 +181,7 @@ const _cur = new THREE.Vector3()
 const _dir = new THREE.Vector3()
 const _e = new THREE.Euler()
 const UP = new THREE.Vector3(0, 1, 0)
+const _pole = new THREE.Vector3()
 
 /** The bone's own "length" axis: towards its first child joint (works for any rig). */
 function boneAxis(bone: THREE.Object3D) {
@@ -217,6 +227,70 @@ function facePalm(forearm: THREE.Object3D, axis: THREE.Vector3, handBone: THREE.
   forearm.updateWorldMatrix(false, true)
 }
 
+/**
+ * Spectacles built in code and parented to the head bone, placed from the eye
+ * joints in the rest pose — so they follow every head turn (and the hologram).
+ */
+function makeGlasses(head: THREE.Object3D, eyeL: THREE.Object3D, eyeR: THREE.Object3D) {
+  const pL = eyeL.getWorldPosition(new THREE.Vector3())
+  const pR = eyeR.getWorldPosition(new THREE.Vector3())
+  const ipd = pL.distanceTo(pR)
+  const g = new THREE.Group()
+  g.name = 'Glasses'
+  const frame = new THREE.MeshStandardMaterial({ color: '#16161c', roughness: 0.35, metalness: 0.4 })
+  const lens = new THREE.MeshStandardMaterial({ color: '#cfe6ff', roughness: 0.05, transparent: true, opacity: 0.18, depthWrite: false })
+  const r = ipd * 0.43
+  for (const side of [-1, 1]) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(r, ipd * 0.05, 8, 32), frame)
+    ring.scale.set(1, 0.78, 1)
+    ring.position.set((side * ipd) / 2, 0, 0)
+    const glass = new THREE.Mesh(new THREE.CircleGeometry(r, 32), lens)
+    glass.scale.set(1, 0.78, 1)
+    glass.position.copy(ring.position)
+    const temple = new THREE.Mesh(new THREE.BoxGeometry(ipd * 0.05, ipd * 0.06, ipd * 1.7), frame)
+    temple.position.set(side * (ipd / 2 + r * 0.98), ipd * 0.05, -ipd * 0.85)
+    g.add(ring, glass, temple)
+  }
+  const bridge = new THREE.Mesh(new THREE.CylinderGeometry(ipd * 0.035, ipd * 0.035, ipd - 2 * r * 0.95, 8), frame)
+  bridge.rotation.z = Math.PI / 2
+  bridge.position.y = ipd * 0.12
+  g.add(bridge)
+  g.traverse((o) => (o.userData.glasses = true))
+  // rest pose: centred between the eyes, a little in front, axes aligned with the model (+z forward)
+  const centre = new THREE.Vector3().addVectors(pL, pR).multiplyScalar(0.5).add(new THREE.Vector3(0, ipd * 0.05, ipd * 0.42))
+  const world = new THREE.Matrix4().makeTranslation(centre.x, centre.y, centre.z)
+  const localM = head.matrixWorld.clone().invert().multiply(world)
+  localM.decompose(g.position, g.quaternion, g.scale)
+  return g
+}
+
+const _S = new THREE.Vector3()
+const _E = new THREE.Vector3()
+const _W = new THREE.Vector3()
+const _T = new THREE.Vector3()
+const _p = new THREE.Vector3()
+const DOWN = new THREE.Vector3(0, -1, 0)
+
+/** Two-bone IK: put the wrist on `target`, elbow bending toward `pole`. */
+function reach(upper: THREE.Object3D, upAxis: THREE.Vector3, lower: THREE.Object3D, loAxis: THREE.Vector3, wrist: THREE.Object3D, target: THREE.Vector3, pole: THREE.Vector3) {
+  upper.updateWorldMatrix(true, true)
+  upper.getWorldPosition(_S)
+  lower.getWorldPosition(_E)
+  wrist.getWorldPosition(_W)
+  const L1 = _S.distanceTo(_E)
+  const L2 = _E.distanceTo(_W)
+  _T.subVectors(target, _S)
+  const dist = Math.min(Math.max(_T.length(), 1e-3), (L1 + L2) * 0.999)
+  _T.normalize()
+  const a = (L1 * L1 - L2 * L2 + dist * dist) / (2 * dist)
+  const h = Math.sqrt(Math.max(0, L1 * L1 - a * a))
+  _p.copy(pole).addScaledVector(_T, -pole.dot(_T)).normalize()
+  _E.copy(_S).addScaledVector(_T, a).addScaledVector(_p, h) // elbow
+  _W.copy(_S).addScaledVector(_T, dist) // reachable wrist spot
+  aim(upper, upAxis, _dir.subVectors(_E, _S).normalize())
+  aim(lower, loAxis, _dir.subVectors(_W, _E).normalize())
+}
+
 export default function Character({ pose, holo, typing, wave, still, armsUp, clip, rig, trackHand, ...group }: Props) {
   const { scene, animations } = useGLTF(CFG.url)
   const model = useMemo(() => clone(scene), [scene])
@@ -235,7 +309,7 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
         const src = m.material as THREE.MeshStandardMaterial
         const mat = src.clone()
         mat.clippingPlanes = clip ?? null
-        mat.roughness = Math.max(mat.roughness, 0.6)
+        if (!m.userData.glasses) mat.roughness = Math.max(mat.roughness, 0.6)
         m.material = mat
       }
     })
@@ -243,15 +317,19 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
 
   const bones = useMemo(() => {
     const get = (n: string) => model.getObjectByName(n)!
-    const map = Object.fromEntries(Object.entries(CFG.bones).map(([k, n]) => [k, get(n)])) as Record<Limb | 'head' | 'wristR', THREE.Object3D>
+    const map = Object.fromEntries(Object.entries(CFG.bones).map(([k, n]) => [k, get(n)])) as Record<Limb | 'head' | 'wristR' | 'wristL' | 'eyeL' | 'eyeR', THREE.Object3D>
     const axes = new Map(LIMBS.map((l) => [l, boneAxis(map[l])]))
     // rest rotations: models without an idle clip are reset to these every frame,
     // otherwise per-frame offsets (like the head turn) would accumulate and spin
     const rest = new Map([...LIMBS, 'head' as const].map((k) => [map[k], map[k].quaternion.clone()]))
-    // palm normal in the right hand's own space (from the rest pose)
+    // palm normals in each hand's own space (from the rest pose)
     model.updateWorldMatrix(true, true)
-    const palm = new THREE.Vector3(...CFG.palmRest).applyQuaternion(map.wristR.getWorldQuaternion(new THREE.Quaternion()).invert())
-    return { ...map, axes, rest, palm }
+    const local = (dir: [number, number, number], bone: THREE.Object3D) =>
+      new THREE.Vector3(...dir).applyQuaternion(bone.getWorldQuaternion(new THREE.Quaternion()).invert())
+    const palm = local(CFG.palmRest, map.wristR)
+    const palmL = local(CFG.palmRestL, map.wristL)
+    if (map.eyeL && map.eyeR) map.head.add(makeGlasses(map.head, map.eyeL, map.eyeR))
+    return { ...map, axes, rest, palm, palmL }
   }, [model])
 
   // size: scale to TARGET_HEIGHT; when sitting, drop him so his hip joints sit on the seat
@@ -260,7 +338,7 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
     const box = new THREE.Box3().setFromObject(model)
     const scale = TARGET_HEIGHT / (box.max.y - box.min.y)
     const hipY = (bones.UpperLegL.getWorldPosition(new THREE.Vector3()).y - box.min.y) * scale
-    return { scale, sitDrop: 0.62 - hipY - box.min.y * scale, standDrop: -box.min.y * scale }
+    return { scale, sitDrop: SEAT_HIP - hipY - box.min.y * scale, standDrop: -box.min.y * scale }
   }, [model, bones])
 
   // breathing idle from the model's own animation
@@ -272,6 +350,8 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
   }, [mixer, animations])
 
   useEffect(() => () => void (trackHand && (hand.onMouse = false)), [trackHand])
+
+  const ik = useRef<{ L?: THREE.Vector3; R?: THREE.Vector3 }>({})
 
   // smoothed limb directions (character space) + head
   const cur = useRef<Partial<Record<Limb, THREE.Vector3>>>({})
@@ -302,6 +382,23 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
       aim(bones[limb], bones.axes.get(limb)!, _dir.copy(c[limb]!).applyQuaternion(_mq).normalize())
     }
 
+    // hands on keyboard / mouse: exact placement + palms facing down
+    const r = rig?.current
+    if (r && (mode === 'type' || mode === 'fast' || mode === 'mouse')) {
+      for (const side of ['L', 'R'] as const) {
+        const target = side === 'L' ? r.ikL : r.ikR
+        if (!target) continue
+        const sm = (ik.current[side] ??= target.clone()).lerp(target, 1 - Math.exp(-18 * dt))
+        const sgn = side === 'L' ? 1 : -1 // his left is +x
+        _pole.set(sgn * 0.8, -0.45, -0.55).applyQuaternion(_mq)
+        const upKey = side === 'L' ? 'UpperArmL' : 'UpperArmR'
+        const loKey = side === 'L' ? 'LowerArmL' : 'LowerArmR'
+        const wr = side === 'L' ? bones.wristL : bones.wristR
+        reach(bones[upKey], bones.axes.get(upKey)!, bones[loKey], bones.axes.get(loKey)!, wr, sm, _pole)
+        facePalm(bones[loKey], bones.axes.get(loKey)!, wr, side === 'L' ? bones.palmL : bones.palm, DOWN)
+      }
+    } else ik.current = {}
+
     if (mode === 'wave') {
       // palm toward whoever he's waving at (his forward, slightly up)
       _f.set(0, 0.25, 1).applyQuaternion(_mq).normalize()
@@ -314,6 +411,10 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
     _e.set(head.current[1], head.current[0], 0)
     bones.head.quaternion.multiply(_q.setFromEuler(_e))
 
+    if (import.meta.env.DEV && trackHand) {
+      const w = (o: THREE.Object3D) => o.getWorldPosition(new THREE.Vector3()).toArray().map((n) => +n.toFixed(3))
+      ;(window as unknown as { __wrists: unknown }).__wrists = { mode, L: w(bones.wristL), R: w(bones.wristR), tL: r?.ikL?.toArray(), tR: r?.ikR?.toArray(), shL: w(bones.UpperArmL), shR: w(bones.UpperArmR), elL: w(bones.LowerArmL) }
+    }
     if (trackHand) {
       hand.onMouse = mode === 'mouse'
       if (hand.onMouse) {

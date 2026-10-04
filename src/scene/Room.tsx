@@ -227,15 +227,15 @@ function Plant(p: JSX.IntrinsicElements['group']) {
 export function Chair({ clip, ...p }: { clip?: THREE.Plane[] } & JSX.IntrinsicElements['group']) {
   return (
     <group {...p}>
-      <RoundedBox args={[0.72, 0.08, 0.66]} radius={0.04} position={[0, 0.62, 0]}>
+      <RoundedBox args={[0.72, 0.08, 0.66]} radius={0.04} position={[0, 0.74, 0]}>
         <meshStandardMaterial color={WHITE} roughness={0.7} clippingPlanes={clip ?? null} />
       </RoundedBox>
-      <RoundedBox args={[0.72, 0.62, 0.08]} radius={0.04} position={[0, 1.0, 0.33]} rotation={[-0.12, 0, 0]}>
+      <RoundedBox args={[0.72, 0.62, 0.08]} radius={0.04} position={[0, 1.13, 0.33]} rotation={[-0.12, 0, 0]}>
         <meshStandardMaterial color={WHITE} roughness={0.7} clippingPlanes={clip ?? null} />
       </RoundedBox>
       {[[-0.3, -0.25], [0.3, -0.25], [-0.3, 0.25], [0.3, 0.25]].map(([x, z], i) => (
-        <mesh key={i} position={[x, 0.3, z]}>
-          <cylinderGeometry args={[0.025, 0.025, 0.6, 8]} />
+        <mesh key={i} position={[x, 0.36, z]}>
+          <cylinderGeometry args={[0.025, 0.025, 0.72, 8]} />
           <meshStandardMaterial color="#9a9aa3" roughness={0.3} clippingPlanes={clip ?? null} />
         </mesh>
       ))}

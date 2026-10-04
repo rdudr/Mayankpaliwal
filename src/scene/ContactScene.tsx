@@ -74,7 +74,7 @@ export default function ContactScene({ reduced }: { reduced: boolean }) {
       <Parcel size={[1.1, 0.8, 0.9]} position={[0.05, 1.4, -0.05]} rotation={[0, 0.25, 0]} />
       <Parcel size={[0.7, 0.5, 0.6]} position={[1.25, 0.25, 0.65]} rotation={[0, -0.45, 0]} />
       <Parcel size={[0.55, 0.4, 0.5]} position={[-1.2, 0.2, 0.75]} rotation={[0, 0.5, 0]} />
-      <Character pose="sit" wave={!reduced} still={reduced} position={[0.05, 1.41, 0.08]} rotation={[0, 0.25, 0]} />
+      <Character pose="sit" wave={!reduced} still={reduced} position={[0.05, 1.27, 0.08]} rotation={[0, 0.25, 0]} />
       {Array.from({ length: 8 }, (_, i) => (
         <Envelope key={i} i={i} reduced={reduced} />
       ))}

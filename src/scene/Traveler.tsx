@@ -27,6 +27,12 @@ const SWIVEL_BACK = 0.5
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a)
 
+// Where his wrists go on the desk (world space): just behind the keys / the mouse
+const KEYS = { half: 0.17, y: 1.262, z: -0.01 }
+const MOUSE = { x: 0.52, z: -0.02 }
+const ikL = new THREE.Vector3()
+const ikR = new THREE.Vector3()
+
 /** Chat-bubble sprite that pops above the timeline monitor ("new message"). */
 function useBubbleTexture() {
   return useMemo(() => {
@@ -159,6 +165,16 @@ export default function Traveler({ reduced }: { reduced: boolean }) {
       }
       r.mode = S.act
     }
+    // hands: exact spots on the keyboard / mouse (world space; his left hand is at -x)
+    if (r.mode === 'type' || r.mode === 'fast' || r.mode === 'mouse') {
+      const f = r.mode === 'fast' ? 24 : 14
+      ikL.set(-KEYS.half, KEYS.y + Math.max(0, Math.sin(now * f)) * 0.018, KEYS.z)
+      if (r.mode === 'mouse') ikR.set(MOUSE.x + Math.sin(now * 2.2) * 0.035, KEYS.y - 0.004, MOUSE.z + Math.sin(now * 3.1) * 0.025)
+      else ikR.set(KEYS.half, KEYS.y + Math.max(0, Math.sin(now * f + 1.7)) * 0.018, KEYS.z)
+      r.ikL = ikL
+      r.ikR = ikR
+    } else r.ikL = r.ikR = null
+
     // blink every few seconds
     if (now >= S.blinkAt) {
       r.blink = true

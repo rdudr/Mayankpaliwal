@@ -12,7 +12,7 @@ function Mat({ color, rough = 0.6 }: { color: string; rough?: number }) {
 }
 
 /** An app icon tile hovering near the hologram — bobs and keeps facing the camera. */
-function FloatingLogo({ kind, base, i, reduced }: { kind: AppKind; base: [number, number, number]; i: number; reduced: boolean }) {
+export function FloatingLogo({ kind, base, i, reduced }: { kind: AppKind; base: [number, number, number]; i: number; reduced: boolean }) {
   const ref = useRef<THREE.Group>(null)
   const tex = useMemo(() => {
     const c = makeCanvas(256, 256)

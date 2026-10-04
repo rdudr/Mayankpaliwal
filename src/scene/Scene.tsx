@@ -63,6 +63,15 @@ function Rig({ reduced }: { reduced: boolean }) {
     camera.position.copy(pos)
     camera.lookAt(tgt)
 
+    // Dev-only close-up camera for inspecting details: window.__camOverride = [px,py,pz, tx,ty,tz]
+    const co = import.meta.env.DEV ? (window as unknown as { __camOverride?: number[] }).__camOverride : undefined
+    if (co) {
+      camera.position.set(co[0], co[1], co[2])
+      camera.lookAt(co[3], co[4], co[5])
+      ;(camera as THREE.PerspectiveCamera).clearViewOffset()
+      return
+    }
+
     // Cursor parallax (desktop): the camera drifts toward the pointer, like the reference
     const P = parallax.current
     const tx = cursor.active && !reduced ? cursor.x * 0.45 : 0
