@@ -1,10 +1,10 @@
 import { ContactShadows } from '@react-three/drei/core/ContactShadows'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import ContactScene from './ContactScene'
 import Lab from './Lab'
-import { cam, CONTACT_X, LAB_Y, LAB_Z, scroll, trans, TRANS_SECONDS } from './progress'
+import { cam, CONTACT_X, cursor, LAB_Y, LAB_Z, scroll, trans, TRANS_SECONDS } from './progress'
 import Room from './Room'
 import Traveler from './Traveler'
 
@@ -35,6 +35,7 @@ function Rig({ reduced }: { reduced: boolean }) {
   const pos = useMemo(() => new THREE.Vector3(), [])
   const tgt = useMemo(() => new THREE.Vector3(), [])
   const bg = useMemo(() => new THREE.Color(), [])
+  const parallax = useRef({ x: 0, y: 0 })
 
   useFrame((_, dt) => {
     // Home → about plays as a timed transition (see progress.ts / lib/pager.ts)
@@ -62,6 +63,15 @@ function Rig({ reduced }: { reduced: boolean }) {
     camera.position.copy(pos)
     camera.lookAt(tgt)
 
+    // Cursor parallax (desktop): the camera drifts toward the pointer, like the reference
+    const P = parallax.current
+    const tx = cursor.active && !reduced ? cursor.x * 0.45 : 0
+    const ty = cursor.active && !reduced ? -cursor.y * 0.45 : 0
+    P.x = THREE.MathUtils.damp(P.x, tx, 3, dt)
+    P.y = THREE.MathUtils.damp(P.y, ty, 3, dt)
+    camera.translateX(P.x)
+    camera.translateY(P.y)
+
     const sx = mobile ? 0 : THREE.MathUtils.lerp(A.sx, B.sx, k)
     const sy = mobile ? THREE.MathUtils.lerp(A.sy, B.sy, k) : 0
     const pcam = camera as THREE.PerspectiveCamera
@@ -83,6 +93,20 @@ function Ready({ onReady }: { onReady: () => void }) {
 }
 
 export default function Scene({ reduced, onReady }: { reduced: boolean; onReady: () => void }) {
+  useEffect(() => {
+    const fine = matchMedia('(hover: hover) and (pointer: fine)')
+    const move = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || !fine.matches) return
+      cursor.x = e.clientX / innerWidth - 0.5
+      cursor.y = e.clientY / innerHeight - 0.5
+      cursor.active = true
+    }
+    const leave = () => (cursor.active = false)
+    addEventListener('pointermove', move)
+    document.documentElement.addEventListener('pointerleave', leave)
+    return () => (removeEventListener('pointermove', move), document.documentElement.removeEventListener('pointerleave', leave))
+  }, [])
+
   return (
     <Canvas
       className="!fixed inset-0"

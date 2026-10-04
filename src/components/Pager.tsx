@@ -29,26 +29,24 @@ export default function Pager({ children }: { children: ReactNode[] }) {
     const el = () => refs.current[currentPage()]!
     const modalOpen = () => document.documentElement.classList.contains('lock')
     let lastWheel = 0
-    let edgeSince = 0
+    let armed = true // one gesture → at most one page, and only if it started at the edge
 
     const onWheel = (e: WheelEvent) => {
       if (modalOpen() || e.ctrlKey) return
       const dir = (Math.sign(e.deltaY) || 0) as 1 | -1 | 0
-      if (!dir) return
       const now = performance.now()
-      const fresh = now - lastWheel > 220 // a new gesture, not trackpad momentum
+      // Trackpads keep firing "momentum" events for seconds after a flick;
+      // a pause of >250ms marks the start of a genuinely new gesture.
+      const fresh = now - lastWheel > 250
       lastWheel = now
-      if (!atEdge(el(), dir)) {
-        edgeSince = 0
-        return
-      }
+      if (!dir) return
+      // A gesture may turn the page only if it *began* at the page's edge.
+      if (fresh) armed = atEdge(el(), dir)
+      if (!atEdge(el(), dir)) return // the page itself still has room to scroll
       e.preventDefault()
-      if (isBusy()) return
-      if (!edgeSince) edgeSince = now
-      if (fresh || now - edgeSince > 900) {
-        edgeSince = 0
-        goTo(currentPage() + dir)
-      }
+      if (!armed || isBusy() || Math.abs(e.deltaY) < 4) return
+      armed = false
+      goTo(currentPage() + dir)
     }
 
     let y0 = 0

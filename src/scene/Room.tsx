@@ -3,7 +3,7 @@ import { RoundedBox } from '@react-three/drei/core/RoundedBox'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { backIn, clamp01, trans } from './progress'
+import { backIn, clamp01, desk, trans } from './progress'
 import { drawNote, drawProgram, drawTimeline, makeCanvas } from './textures'
 
 const WOOD = '#d9b07a'
@@ -136,7 +136,11 @@ export function Chair({ clip, ...p }: { clip?: THREE.Plane[] } & JSX.IntrinsicEl
 
 /** Room furniture "bounces out" (back-ease shrink) as he falls, and back in on return. */
 export default function Room() {
-  const program = useRef<HTMLImageElement | null>(null)
+  // The Program monitor shows his real episode frames; desk.frame advances when he "clicks".
+  const frames = useRef<HTMLImageElement[]>([])
+  useEffect(() => {
+    frames.current = [4, 1, 3, 6, 2, 5].map((n) => Object.assign(new Image(), { src: `/media/projects/daud/ep0${n}.jpg` }))
+  }, [])
   const root = useRef<THREE.Group>(null)
   useFrame(() => {
     const g = root.current
@@ -145,12 +149,6 @@ export default function Room() {
     g.visible = k > 0.002
     g.scale.setScalar(Math.max(k, 0.002))
   })
-  useEffect(() => {
-    const img = new Image()
-    img.src = '/media/projects/daud/ep04.jpg'
-    program.current = img
-  }, [])
-
   return (
     <group ref={root}>
       <ContactShadows position={[0, 0.001, 0]} opacity={0.35} scale={9} blur={2.4} far={3} frames={1} />
@@ -177,7 +175,7 @@ export default function Room() {
       ))}
 
       <Monitor draw={drawTimeline} position={[-0.64, 1.88, -0.82]} rotation={[0, 0.18, 0]} />
-      <Monitor draw={(c, w, h, t) => drawProgram(c, w, h, program.current, t)} position={[0.64, 1.88, -0.82]} rotation={[0, -0.18, 0]} />
+      <Monitor draw={(c, w, h, t) => drawProgram(c, w, h, frames.current[desk.frame % 6] ?? null, t)} position={[0.64, 1.88, -0.82]} rotation={[0, -0.18, 0]} />
 
       {/* keyboard + mouse */}
       <RoundedBox args={[0.72, 0.035, 0.22]} radius={0.012} position={[0, 1.22, -0.12]}>
@@ -202,8 +200,7 @@ export default function Room() {
         <Mat color="#4fa0e8" />
       </mesh>
 
-      <Chair position={[0, 0, 0.4]} />
-      {/* the editor himself lives in Traveler.tsx — he falls from here into the lab */}
+      {/* the chair + the editor live in Traveler.tsx (he drops in, swivels, and falls to the lab) */}
 
       {/* Wall pieces, floating like the reference */}
       <group position={[-1.7, 2.75, -1.5]}>

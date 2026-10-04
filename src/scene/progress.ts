@@ -14,6 +14,15 @@ export const TRANS_SECONDS = 1.6
 /** Camera is on the contact scene (switched while the projects page hides the canvas). */
 export const cam = { contact: false }
 
+/** Set by the app when the loader finishes: plays the "drop into the chair + wave" intro. */
+export const intro = { pending: false }
+
+/** Which of his episodes the desk's Program monitor is showing (he "clicks" through them). */
+export const desk = { frame: 0 }
+
+/** Cursor position, -0.5…0.5 from screen centre (desktop only) — drives camera parallax. */
+export const cursor = { x: 0, y: 0, active: false }
+
 // The lab sits directly below the room — he falls straight down into the tube.
 export const LAB_Y = -14
 export const LAB_Z = 0.3

@@ -10,6 +10,7 @@ import Work from './components/Work'
 import { useReducedMotion } from './lib/hooks'
 import Pager from './components/Pager'
 import { goTo } from './lib/pager'
+import { intro } from './scene/progress'
 
 // three.js + the scenes load in their own chunk while the loader plays.
 const Scene = lazy(() => import('./scene/Scene'))
@@ -27,7 +28,15 @@ export default function App() {
         <Suspense fallback={null}>
           <Scene reduced={reduced} onReady={onReady} />
         </Suspense>
-        {!entered && <Loader ready={sceneReady} onDone={() => setEntered(true)} />}
+        {!entered && (
+          <Loader
+            ready={sceneReady}
+            onDone={() => {
+              intro.pending = true // he drops into his chair and waves
+              setEntered(true)
+            }}
+          />
+        )}
         <Nav />
         <main>
           <Pager>

@@ -114,6 +114,13 @@ const cues = {
     tone(180, 0.18, 0.12, 'sine', 0, 90)
     noise(0.12, 0.08, 'lowpass', 900)
   },
+  /** dropping into the desk chair */
+  chairImpact: () => {
+    tone(110, 0.22, 0.25, 'sine', 0, 55)
+    noise(0.18, 0.12, 'lowpass', 700, 200)
+    noise(0.35, 0.05, 'bandpass', 900, 500, 0.18, 4) // chair creak
+  },
+  typing: () => typingBurst(),
   notification: () => {
     tone(880, 0.16, 0.05, 'sine')
     tone(1320, 0.22, 0.05, 'sine', 0.12)

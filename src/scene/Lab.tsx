@@ -136,6 +136,15 @@ export default function Lab({ reduced }: { reduced: boolean }) {
         <cylinderGeometry args={[0.98, 0.98, 2.95, 48, 1, true]} />
         <meshStandardMaterial color="#7fd0ff" transparent opacity={0.16} side={THREE.DoubleSide} depthWrite={false} roughness={0.1} />
       </mesh>
+      {/* water column + surface — he floats in it */}
+      <mesh position={[0, 1.7, 0]}>
+        <cylinderGeometry args={[0.95, 0.95, 2.6, 48, 1, true]} />
+        <meshBasicMaterial color="#2aa8ff" transparent opacity={0.13} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, 3.0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.95, 48]} />
+        <meshBasicMaterial color="#9fe2ff" transparent opacity={0.28} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
       <mesh position={[0, 3.5, 0]}>
         <cylinderGeometry args={[1.18, 1.12, 0.42, 48]} />
         <Mat color={LAB_WHITE} rough={0.45} />
