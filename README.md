@@ -50,6 +50,9 @@ Push to GitHub and import the repo in Vercel (framework preset: Vite).
 Build command `npm run build`, output folder `dist`.
 
 ## Credits
-3D character: "Business Man" from the Ultimate Modular Men Pack by Quaternius —
-public domain (CC0), https://poly.pizza/m/JFrLIKqvCH. File: `public/models/editor.glb`.
+3D character: "Jake" (Character Creator rig), supplied by Rishabh — source and
+licence to be confirmed before publishing. File: `public/models/jake.glb`
+(compressed from the original 41 MB FBX). Fallback: "Business Man" by Quaternius,
+public domain (CC0), https://poly.pizza/m/JFrLIKqvCH — `public/models/editor.glb`;
+switch with `CFG` in `src/scene/Character.tsx`.
 All other 3D scenes are built in code (`src/scene/`).

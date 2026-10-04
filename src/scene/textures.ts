@@ -265,3 +265,9 @@ export function drawSocialLogo(ctx: Ctx, s: number, kind: 'youtube' | 'instagram
   ctx.arc(x + w * 0.69, x + w * 0.31, w * 0.045, 0, Math.PI * 2)
   ctx.fill()
 }
+
+/** True if this object and all its parents are visible (i.e. it will be drawn). */
+export function shown(o: THREE.Object3D | null | undefined) {
+  for (let x = o; x; x = x.parent) if (!x.visible) return false
+  return !!o
+}

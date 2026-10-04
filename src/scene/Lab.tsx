@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { profile } from '../content/site'
-import { drawAppLogo, drawWaveform, makeCanvas, toolLogo, type AppKind } from './textures'
+import { drawAppLogo, drawWaveform, makeCanvas, shown, toolLogo, type AppKind } from './textures'
 
 const LAB_WHITE = '#e8f0fa'
 
@@ -76,15 +76,16 @@ function Bubbles({ reduced }: { reduced: boolean }) {
 function WaveScreen(p: JSX.IntrinsicElements['group']) {
   const { ctx, tex } = useMemo(() => makeCanvas(512, 320), [])
   const last = useRef(-1)
+  const self = useRef<THREE.Group>(null)
   useFrame(({ clock }) => {
     const t = clock.elapsedTime
-    if (t - last.current < 1 / 20) return
+    if (t - last.current < 1 / 20 || !shown(self.current)) return
     last.current = t
     drawWaveform(ctx, 512, 320, t)
     tex.needsUpdate = true
   })
   return (
-    <group {...p}>
+    <group ref={self} {...p}>
       <RoundedBox args={[1.4, 0.92, 0.1]} radius={0.06}>
         <Mat color={LAB_WHITE} rough={0.4} />
       </RoundedBox>

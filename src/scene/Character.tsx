@@ -4,16 +4,42 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { hand } from './progress'
+import { shown } from './textures'
 
 /**
- * The editor: "Business Man" by Quaternius (Ultimate Modular Men Pack,
- * public domain / CC0 — https://poly.pizza/m/JFrLIKqvCH).
- * Its built-in Idle clip keeps him breathing; poses (sitting, typing, waving,
- * falling, floating) are made by aiming limbs in code, so one model covers
- * every moment of the site.
+ * The editor model. Each entry maps our limb names to the model's bones.
+ *  · jake    — the model supplied by Rishabh ("Jake", Character Creator rig),
+ *              compressed for the web (41 MB → 1.5 MB). Source/licence: TBC.
+ *  · business — "Business Man" by Quaternius (CC0, poly.pizza/m/JFrLIKqvCH).
+ * Poses are made by aiming limbs in code, so any rigged human works.
  */
-const MODEL = '/models/editor.glb'
-useGLTF.preload(MODEL)
+const MODELS = {
+  jake: {
+    url: '/models/jake.glb',
+    idle: undefined as string | undefined,
+    bones: {
+      UpperArmL: 'CC_Base_L_Upperarm', LowerArmL: 'CC_Base_L_Forearm',
+      UpperArmR: 'CC_Base_R_Upperarm', LowerArmR: 'CC_Base_R_Forearm',
+      UpperLegL: 'CC_Base_L_Thigh', LowerLegL: 'CC_Base_L_Calf',
+      UpperLegR: 'CC_Base_R_Thigh', LowerLegR: 'CC_Base_R_Calf',
+      head: 'CC_Base_Head', wristR: 'CC_Base_R_Hand',
+    },
+  },
+  business: {
+    url: '/models/editor.glb',
+    idle: 'CharacterArmature|Idle' as string | undefined,
+    bones: {
+      UpperArmL: 'UpperArmL', LowerArmL: 'LowerArmL', UpperArmR: 'UpperArmR', LowerArmR: 'LowerArmR',
+      UpperLegL: 'UpperLegL', LowerLegL: 'LowerLegL', UpperLegR: 'UpperLegR', LowerLegR: 'LowerLegR',
+      head: 'Head', wristR: 'WristR',
+    },
+  },
+}
+const CFG = MODELS.jake
+useGLTF.preload(CFG.url)
+
+/** Height (in scene units) the character is scaled to, standing. */
+const TARGET_HEIGHT = 2.05
 
 type Pose = 'sit' | 'stand'
 
@@ -42,11 +68,6 @@ type Props = GroupProps & {
   /** Publish his right-wrist position while using the mouse (the desk mouse follows it). */
   trackHand?: boolean
 }
-
-// The model is 1.82 units tall; scale it to the size the scenes were laid out for.
-const SCALE = 1.13
-// Sitting: lower him so his hips (0.87 × SCALE) land on the seat the scenes expect (0.55).
-const SIT_DROP = 0.55 - 0.87 * SCALE
 
 const LIMBS = ['UpperArmL', 'LowerArmL', 'UpperArmR', 'LowerArmR', 'UpperLegL', 'LowerLegL', 'UpperLegR', 'LowerLegR'] as const
 type Limb = (typeof LIMBS)[number]
@@ -108,7 +129,13 @@ function targetDirs(mode: CharRig['mode'], sitting: boolean, t: number): Dirs {
       d.LowerArmL = v(0.22, -0.95, 0.18 + s(t * 1.1) * 0.06)
       d.LowerArmR = v(-0.22, -0.95, 0.18 + s(t * 1.2 + 1) * 0.06)
       break
-    default: // rest — leave arms to the Idle clip
+    default: // rest
+      if (!CFG.idle) {
+        d.UpperArmL = v(0.18, -1, 0.02)
+        d.UpperArmR = v(-0.18, -1, 0.02)
+        d.LowerArmL = v(0.1, -1, 0.12)
+        d.LowerArmR = v(-0.1, -1, 0.12)
+      }
   }
   return d
 }
@@ -143,11 +170,17 @@ const _dir = new THREE.Vector3()
 const _e = new THREE.Euler()
 const UP = new THREE.Vector3(0, 1, 0)
 
-/** Rotate a bone so its +Y axis (the bone's length) points along `dirWorld`. */
-function aim(bone: THREE.Object3D, dirWorld: THREE.Vector3) {
+/** The bone's own "length" axis: towards its first child joint (works for any rig). */
+function boneAxis(bone: THREE.Object3D) {
+  const child = bone.children.find((c) => c.position.lengthSq() > 1e-8)
+  return child ? child.position.clone().normalize() : UP.clone()
+}
+
+/** Rotate a bone so its length axis points along `dirWorld`. */
+function aim(bone: THREE.Object3D, axis: THREE.Vector3, dirWorld: THREE.Vector3) {
   bone.updateWorldMatrix(true, false)
   bone.getWorldQuaternion(_q)
-  _cur.copy(UP).applyQuaternion(_q).normalize()
+  _cur.copy(axis).applyQuaternion(_q).normalize()
   _q2.setFromUnitVectors(_cur, dirWorld)
   _q.premultiply(_q2)
   bone.parent!.getWorldQuaternion(_pq)
@@ -156,13 +189,13 @@ function aim(bone: THREE.Object3D, dirWorld: THREE.Vector3) {
 }
 
 export default function Character({ pose, holo, typing, wave, still, armsUp, clip, rig, trackHand, ...group }: Props) {
-  const { scene, animations } = useGLTF(MODEL)
+  const { scene, animations } = useGLTF(CFG.url)
   const model = useMemo(() => clone(scene), [scene])
   const root = useRef<THREE.Group>(null)
 
   // materials: own copies per instance (clipping differs), or the hologram wireframe
   useEffect(() => {
-    const holoMat = new THREE.MeshBasicMaterial({ color: '#5fd2ff', wireframe: true, transparent: true, opacity: 0.85, clippingPlanes: clip })
+    const holoMat = new THREE.MeshBasicMaterial({ color: '#5fd2ff', wireframe: true, transparent: true, opacity: 0.45, depthWrite: false, clippingPlanes: clip })
     model.traverse((o) => {
       const m = o as THREE.Mesh
       if (!m.isMesh) return
@@ -181,13 +214,24 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
 
   const bones = useMemo(() => {
     const get = (n: string) => model.getObjectByName(n)!
-    return { head: get('Head'), wristR: get('WristR'), ...Object.fromEntries(LIMBS.map((n) => [n, get(n)])) } as Record<Limb | 'head' | 'wristR', THREE.Object3D>
+    const map = Object.fromEntries(Object.entries(CFG.bones).map(([k, n]) => [k, get(n)])) as Record<Limb | 'head' | 'wristR', THREE.Object3D>
+    const axes = new Map(LIMBS.map((l) => [l, boneAxis(map[l])]))
+    return { ...map, axes }
   }, [model])
+
+  // size: scale to TARGET_HEIGHT; when sitting, drop him so his hip joints sit on the seat
+  const { scale, sitDrop, standDrop } = useMemo(() => {
+    model.updateWorldMatrix(true, true)
+    const box = new THREE.Box3().setFromObject(model)
+    const scale = TARGET_HEIGHT / (box.max.y - box.min.y)
+    const hipY = (bones.UpperLegL.getWorldPosition(new THREE.Vector3()).y - box.min.y) * scale
+    return { scale, sitDrop: 0.62 - hipY - box.min.y * scale, standDrop: -box.min.y * scale }
+  }, [model, bones])
 
   // breathing idle from the model's own animation
   const mixer = useMemo(() => new THREE.AnimationMixer(model), [model])
   useEffect(() => {
-    const idle = THREE.AnimationClip.findByName(animations, 'CharacterArmature|Idle')
+    const idle = CFG.idle ? THREE.AnimationClip.findByName(animations, CFG.idle) : undefined
     if (idle) mixer.clipAction(idle).play()
     return () => void mixer.stopAllAction()
   }, [mixer, animations])
@@ -199,6 +243,7 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
   const head = useRef<[number, number]>([0, 0])
 
   useFrame(({ clock }, dt) => {
+    if (!shown(root.current)) return // off-screen: skip animation + IK work
     const t = clock.elapsedTime
     if (!still) mixer.update(Math.min(dt, 0.05))
     else mixer.update(0)
@@ -219,7 +264,7 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
       _dir.set(...target).normalize()
       if (!c[limb]) c[limb] = _dir.clone()
       else c[limb]!.lerp(_dir, k).normalize()
-      aim(bones[limb], _dir.copy(c[limb]!).applyQuaternion(_mq).normalize())
+      aim(bones[limb], bones.axes.get(limb)!, _dir.copy(c[limb]!).applyQuaternion(_mq).normalize())
     }
 
     const [ty, tp] = headTarget(mode, still ? 0 : t)
@@ -241,7 +286,7 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
 
   return (
     <group {...group}>
-      <group ref={root} position={[0, pose === 'sit' ? SIT_DROP : 0, 0]} scale={SCALE}>
+      <group ref={root} position={[0, pose === 'sit' ? sitDrop : standDrop, 0]} scale={scale}>
         <primitive object={model} />
       </group>
     </group>

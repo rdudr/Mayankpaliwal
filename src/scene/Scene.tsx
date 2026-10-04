@@ -85,6 +85,22 @@ function Rig({ reduced }: { reduced: boolean }) {
   return null
 }
 
+/**
+ * Only draws (and animates) its scene while it can actually be seen — the
+ * three scenes share one world, so this keeps the frame cost to one scene.
+ */
+function Only({ when, children, ...p }: { when: (s: number) => boolean; children: React.ReactNode } & JSX.IntrinsicElements['group']) {
+  const g = useRef<THREE.Group>(null)
+  useFrame(() => {
+    if (g.current) g.current.visible = when(scroll.s)
+  }, -1) // before everyone else, so hidden scenes can skip their own work
+  return (
+    <group ref={g} {...p}>
+      {children}
+    </group>
+  )
+}
+
 function Ready({ onReady }: { onReady: () => void }) {
   const n = useRef(0)
   useFrame(() => {
@@ -113,7 +129,7 @@ export default function Scene({ reduced, onReady }: { reduced: boolean; onReady:
       className="!fixed inset-0"
       style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}
       camera={{ fov: 32, near: 0.1, far: 120, position: [4.4, 3.9, 5.9] }}
-      dpr={[1, 1.75]}
+      dpr={[1, 1.5]}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', localClippingEnabled: true }}
       aria-hidden
     >
@@ -121,18 +137,20 @@ export default function Scene({ reduced, onReady }: { reduced: boolean; onReady:
       <directionalLight position={[6, 9, 6]} intensity={1.6} />
       <directionalLight position={[-5, 4, -3]} intensity={0.35} color="#bcd4ff" />
 
-      <Room />
+      <Only when={(s) => s < 0.999 && !cam.contact}>
+        <Room />
+      </Only>
       <Traveler reduced={reduced} />
 
-      <group position={[0, LAB_Y, LAB_Z]}>
+      <Only when={(s) => s > 0.05 && !cam.contact} position={[0, LAB_Y, LAB_Z]}>
         <Lab reduced={reduced} />
         <ContactShadows position={[0, 0.002, 0]} opacity={0.5} scale={9} blur={2.6} far={3.5} frames={1} color="#031a45" />
-      </group>
+      </Only>
 
-      <group position={[CONTACT_X, 0, 0]}>
+      <Only when={() => cam.contact} position={[CONTACT_X, 0, 0]}>
         <ContactScene reduced={reduced} />
         <ContactShadows position={[0, 0.002, 0]} opacity={0.35} scale={8} blur={2.4} far={3} frames={1} />
-      </group>
+      </Only>
 
       <Rig reduced={reduced} />
       <Ready onReady={onReady} />

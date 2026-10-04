@@ -4,7 +4,7 @@ import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { bounceScale, desk, hand, trans } from './progress'
-import { drawNote, drawProgram, drawSocialLogo, drawTimeline, makeCanvas, rr } from './textures'
+import { drawNote, drawProgram, drawSocialLogo, drawTimeline, makeCanvas, rr, shown } from './textures'
 
 const WOOD = '#d9b07a'
 const WHITE = '#f6f4f1'
@@ -17,15 +17,16 @@ function Mat({ color, rough = 0.7, ...p }: { color: string; rough?: number; emis
 function Monitor({ draw, ...p }: { draw: (ctx: CanvasRenderingContext2D, w: number, h: number, t: number) => void } & JSX.IntrinsicElements['group']) {
   const { ctx, tex } = useMemo(() => makeCanvas(640, 380), [])
   const last = useRef(-1)
+  const self = useRef<THREE.Group>(null)
   useFrame(({ clock }) => {
     const t = clock.elapsedTime
-    if (t - last.current < 1 / 15) return // 15fps is plenty for a screen
+    if (t - last.current < 1 / 15 || !shown(self.current)) return // 15fps is plenty for a screen
     last.current = t
     draw(ctx, 640, 380, t)
     tex.needsUpdate = true
   })
   return (
-    <group {...p}>
+    <group ref={self} {...p}>
       <RoundedBox args={[1.18, 0.74, 0.07]} radius={0.04}>
         <Mat color="#3b3948" rough={0.4} />
       </RoundedBox>
