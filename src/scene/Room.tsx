@@ -3,7 +3,7 @@ import { RoundedBox } from '@react-three/drei/core/RoundedBox'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { backIn, clamp01, desk, trans } from './progress'
+import { bounceScale, desk, trans } from './progress'
 import { drawNote, drawProgram, drawTimeline, makeCanvas } from './textures'
 
 const WOOD = '#d9b07a'
@@ -134,23 +134,40 @@ export function Chair({ clip, ...p }: { clip?: THREE.Plane[] } & JSX.IntrinsicEl
   )
 }
 
-/** Room furniture "bounces out" (back-ease shrink) as he falls, and back in on return. */
+/**
+ * A piece of the room that "bounces out" (back-ease shrink around its own
+ * pivot) when he falls — staggered by order like the reference: desk first,
+ * plant last. Reverses on the way back.
+ */
+function Bounce({ pivot, order, children }: { pivot: [number, number, number]; order: number; children: React.ReactNode }) {
+  const ref = useRef<THREE.Group>(null)
+  useFrame(() => {
+    const g = ref.current
+    if (!g) return
+    const k = bounceScale(trans.value, order)
+    g.visible = k > 0.002
+    g.scale.setScalar(Math.max(k, 0.002))
+  })
+  return (
+    <group position={pivot}>
+      <group ref={ref}>
+        <group position={[-pivot[0], -pivot[1], -pivot[2]]}>{children}</group>
+      </group>
+    </group>
+  )
+}
+
+/** The desk room on the home page. */
 export default function Room() {
   // The Program monitor shows his real episode frames; desk.frame advances when he "clicks".
   const frames = useRef<HTMLImageElement[]>([])
   useEffect(() => {
     frames.current = [4, 1, 3, 6, 2, 5].map((n) => Object.assign(new Image(), { src: `/media/projects/daud/ep0${n}.jpg` }))
   }, [])
-  const root = useRef<THREE.Group>(null)
-  useFrame(() => {
-    const g = root.current
-    if (!g) return
-    const k = 1 - backIn(clamp01(trans.value / 0.4))
-    g.visible = k > 0.002
-    g.scale.setScalar(Math.max(k, 0.002))
-  })
+
   return (
-    <group ref={root}>
+    <group>
+      <Bounce pivot={[0, 0, 0.2]} order={2}>
       <ContactShadows position={[0, 0.001, 0]} opacity={0.35} scale={9} blur={2.4} far={3} frames={1} />
       {/* Rug */}
       {[
@@ -162,7 +179,8 @@ export default function Room() {
           <Mat color={c as string} rough={0.95} />
         </RoundedBox>
       ))}
-
+      </Bounce>
+      <Bounce pivot={[0, 1.2, -0.6]} order={0}>
       {/* Desk */}
       <RoundedBox args={[2.8, 0.1, 1.15]} radius={0.04} position={[0, 1.15, -0.55]}>
         <Mat color={WHITE} rough={0.5} />
@@ -199,10 +217,11 @@ export default function Room() {
         <cylinderGeometry args={[0.07, 0.065, 0.16, 20]} />
         <Mat color="#4fa0e8" />
       </mesh>
-
+      </Bounce>
       {/* the chair + the editor live in Traveler.tsx (he drops in, swivels, and falls to the lab) */}
 
       {/* Wall pieces, floating like the reference */}
+      <Bounce pivot={[-1.7, 2.75, -1.5]} order={1}>
       <group position={[-1.7, 2.75, -1.5]}>
         <RoundedBox args={[1.2, 0.07, 0.36]} radius={0.02}>
           <Mat color={WOOD} />
@@ -221,7 +240,8 @@ export default function Room() {
           <Mat color="#8fd04f" />
         </mesh>
       </group>
-
+      </Bounce>
+      <Bounce pivot={[0.35, 3.05, -1.65]} order={1}>
       <group position={[0.35, 3.05, -1.65]}>
         <RoundedBox args={[1.9, 1.25, 0.08]} radius={0.05}>
           <Mat color="#e9d3a6" />
@@ -233,8 +253,9 @@ export default function Room() {
         <Note lines={['HOOK in', 'first 5s!']} color="#bcd4f0" position={[-0.45, 0.1, 0.07]} rotation={[0, 0, 0.08]} />
         <Note lines={['EP 04', 'colour pass', 'B-roll ✓']} color="#fbfaf6" position={[0.42, -0.12, 0.07]} rotation={[0, 0, -0.06]} />
       </group>
-
+      </Bounce>
       {/* picture frame with a film-frame icon */}
+      <Bounce pivot={[2.4, 2.45, -1.2]} order={2}>
       <group position={[2.4, 2.45, -1.2]} rotation={[0, -0.45, 0]}>
         <RoundedBox args={[0.9, 0.7, 0.08]} radius={0.06}>
           <Mat color="#8fb4e3" />
@@ -248,8 +269,10 @@ export default function Room() {
           <Mat color="#8fb4e3" />
         </mesh>
       </group>
-
-      <Plant position={[2.25, 0, 1.05]} />
+      </Bounce>
+      <Bounce pivot={[2.25, 0, 1.05]} order={3}>
+        <Plant position={[2.25, 0, 1.05]} />
+      </Bounce>
     </group>
   )
 }

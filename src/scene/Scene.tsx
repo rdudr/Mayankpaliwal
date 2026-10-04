@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import ContactScene from './ContactScene'
 import Lab from './Lab'
-import { backdrop, cam, CONTACT_X, cursor, LAB_Y, LAB_Z, scroll, trans, TRANS_SECONDS } from './progress'
+import { backdrop, cam, CONTACT_X, cursor, LAB_Y, LAB_Z, moveProgress, scroll, trans, TRANS_SECONDS } from './progress'
 import Room from './Room'
 import Traveler from './Traveler'
 
@@ -17,13 +17,15 @@ type Shot = {
   sx: number
   /** Mobile: shift the picture vertically (fraction of height, negative = lower). */
   sy: number
+  /** Extra pull-back on narrow (portrait) screens. */
+  mz: number
 }
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z)
 const shots: Shot[] = [
-  { pos: v(5.6, 4.6, 7.6), target: v(0.15, 1.45, -0.2), sx: -0.2, sy: -0.2 },
-  { pos: v(4.3, LAB_Y + 3.2, LAB_Z + 8.2), target: v(0.15, LAB_Y + 1.95, LAB_Z), sx: -0.21, sy: 0.17 },
-  { pos: v(CONTACT_X + 4.6, 3.6, 7.2), target: v(CONTACT_X, 1.55, 0), sx: -0.22, sy: -0.22 },
+  { pos: v(4.4, 3.9, 5.9), target: v(0.2, 1.7, -0.2), sx: -0.2, sy: -0.2, mz: 1 },
+  { pos: v(2.9, LAB_Y + 2.3, LAB_Z + 6.7), target: v(0.25, LAB_Y + 1.85, LAB_Z), sx: -0.2, sy: 0.12, mz: 1.3 },
+  { pos: v(CONTACT_X + 4.6, 3.6, 7.2), target: v(CONTACT_X, 1.55, 0), sx: -0.22, sy: -0.22, mz: 1 },
 ]
 
 const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2)
@@ -43,7 +45,7 @@ function Rig({ reduced }: { reduced: boolean }) {
       trans.value = trans.value < trans.target ? Math.min(trans.target, trans.value + step) : Math.max(trans.target, trans.value - step)
     }
     // 0 = room, 1 = lab, 2 = contact (a hidden cut, made under the projects page)
-    const s = cam.contact ? 2 : ease(trans.value)
+    const s = cam.contact ? 2 : moveProgress(trans.value)
     scroll.s = s
     const i = Math.min(1, Math.floor(s))
     const k = i === 0 ? s : ease(s - i)
@@ -56,7 +58,7 @@ function Rig({ reduced }: { reduced: boolean }) {
     // Narrow screens: pull back so the scene fits
     const aspect = size.width / size.height
     const mobile = size.width < 768
-    if (aspect < 1.2) pos.sub(tgt).multiplyScalar(1 + (1.2 - aspect) * 0.9).add(tgt)
+    if (aspect < 1.2) pos.sub(tgt).multiplyScalar((1 + (1.2 - aspect) * 0.9) * THREE.MathUtils.lerp(A.mz, B.mz, k)).add(tgt)
 
     camera.position.copy(pos)
     camera.lookAt(tgt)
@@ -110,7 +112,7 @@ export default function Scene({ reduced, onReady }: { reduced: boolean; onReady:
     <Canvas
       className="!fixed inset-0"
       style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}
-      camera={{ fov: 32, near: 0.1, far: 120, position: [5.6, 4.6, 7.6] }}
+      camera={{ fov: 32, near: 0.1, far: 120, position: [4.4, 3.9, 5.9] }}
       dpr={[1, 1.75]}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', localClippingEnabled: true }}
       aria-hidden

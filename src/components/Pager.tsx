@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { currentPage, goTo, isBusy, PAGES, slideSeconds, usePage } from '../lib/pager'
+import { TURN } from '../scene/progress'
 
 const EDGE = 2
 
@@ -18,6 +19,8 @@ export default function Pager({ children }: { children: ReactNode[] }) {
   const prev = useRef(page)
   const refs = useRef<(HTMLDivElement | null)[]>([])
   const dur = slideSeconds(prev.current, page)
+  // Home ↔ About rides the 3D fall: wait for his swivel, then move on the same curve as the camera.
+  const fall = prev.current + page === 1 && dur > 0
   useEffect(() => {
     prev.current = page
     // New page starts at its top (or bottom when arriving from below? reference starts at top)
@@ -95,7 +98,11 @@ export default function Pager({ children }: { children: ReactNode[] }) {
       <motion.div
         className="h-full"
         animate={{ y: `${-page * 100}%` }}
-        transition={{ duration: dur, ease: [0.65, 0.05, 0.36, 1] }}
+        transition={
+          fall
+            ? { delay: page === 1 ? dur * TURN : 0, duration: dur * (1 - TURN), ease: [0.45, 0, 0.55, 1] }
+            : { duration: dur, ease: [0.65, 0.05, 0.36, 1] }
+        }
       >
         {children.map((child, i) => (
           <div

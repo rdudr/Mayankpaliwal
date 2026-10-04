@@ -88,7 +88,8 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
           T = [0.35 + Math.sin(t * 13) * 0.2, -2.1 + Math.sin(t * 15) * 0.35, 0.35 + Math.sin(t * 13 + 2) * 0.2, 2.1 - Math.sin(t * 15 + 1) * 0.35, 0, -0.18]
           break
         case 'float':
-          T = [0.2 + Math.sin(t * 1.1) * 0.15, -0.95 + Math.sin(t * 1.3) * 0.18, 0.2 + Math.sin(t * 1.2 + 1) * 0.15, 0.95 - Math.sin(t * 1.4 + 0.5) * 0.18, Math.sin(t * 0.5) * 0.15, -0.05 + Math.sin(t * 0.9) * 0.05]
+          // relaxed "water idle": arms a little out from the body, drifting
+          T = [0.05 + Math.sin(t * 1.1) * 0.06, -0.32 + Math.sin(t * 1.3) * 0.08, 0.05 + Math.sin(t * 1.2 + 1) * 0.06, 0.32 - Math.sin(t * 1.4 + 0.5) * 0.08, Math.sin(t * 0.5) * 0.1, -0.03 + Math.sin(t * 0.9) * 0.03]
           break
         default:
           T = [0, -0.14, 0, 0.14, Math.sin(t * 0.6) * 0.2, 0]

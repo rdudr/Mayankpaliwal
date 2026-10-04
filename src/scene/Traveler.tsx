@@ -3,19 +3,20 @@ import { useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { blip } from '../lib/sound'
 import Character, { newRig } from './Character'
-import { backIn, clamp01, desk, easeIn, easeInOut, easeOut, intro, LAB_Y, LAB_Z, trans, WIRE_Y } from './progress'
+import { bounceScale, clamp01, desk, easeIn, easeInOut, easeOut, intro, LAB_Y, LAB_Z, moveProgress, trans, TURN, WIRE_Y } from './progress'
 import { Chair } from './Room'
 import { makeCanvas, rr } from './textures'
 
 type Stage = 'sit' | 'fall' | 'float'
 
 const SEAT_Y = 0.66 // standing on the chair seat at the moment he jumps
-const LAND_Y = LAB_Y + 0.42 + 0.25 // floating just above the tube floor
-const H = 2.25 * 1.18 // his height at hologram scale
+const LAND_Y = LAB_Y + 0.42 // standing on the tube floor, head just under the cap (like the reference)
+const SCALE = 1.25
+const H = 2.25 * SCALE // his height at hologram scale
 const CHAIR = new THREE.Vector3(0, 0, 0.4)
 const FACE_DESK = Math.PI
 const FACE_CAMERA = 0.66 // swivelled round toward the home camera
-const FACE_LAB_CAMERA = 0.48
+const FACE_LAB_CAMERA = 0.38
 
 // Intro beats (seconds after the loader finishes), modelled on the reference
 const DROP = 1.1
@@ -65,7 +66,7 @@ export default function Traveler({ reduced }: { reduced: boolean }) {
   const rig = useRef(newRig('type'))
   const holoRig = useRef(newRig('float'))
   const fallRig = useRef({ ...newRig('fall'), scared: true })
-  const sched = useRef({ introT0: -1, act: 'type' as 'type' | 'mouse' | 'fast', until: 0, mouseAt: 3, fastAt: 9, clickAt: 0, blinkAt: 2.5, popupT0: -10 })
+  const sched = useRef({ landedAt: -10, introT0: -1, act: 'type' as 'type' | 'mouse' | 'fast', until: 0, mouseAt: 3, fastAt: 9, clickAt: 0, blinkAt: 2.5, popupT0: -10 })
 
   const chairRoot = useRef<THREE.Group>(null)
   const swivel = useRef<THREE.Group>(null)
@@ -87,8 +88,11 @@ export default function Traveler({ reduced }: { reduced: boolean }) {
     const now = clock.elapsedTime
     const v = trans.value
     const S = sched.current
-    const next: Stage = v < 0.03 ? 'sit' : v < 0.985 ? 'fall' : 'float'
-    if (next !== stage) setStage(next)
+    const next: Stage = v < TURN ? 'sit' : v < 0.985 ? 'fall' : 'float'
+    if (next !== stage) {
+      if (next === 'float') S.landedAt = now
+      setStage(next)
+    }
 
     /* ── page 1 ─────────────────────────────────────────────── */
     if (intro.pending) {
@@ -113,18 +117,21 @@ export default function Traveler({ reduced }: { reduced: boolean }) {
     if (it >= SWIVEL_OUT[0] && it < SWIVEL_OUT[1]) sw = easeInOut((it - SWIVEL_OUT[0]) / (SWIVEL_OUT[1] - SWIVEL_OUT[0]))
     else if (it >= SWIVEL_OUT[1] && it < WAVE_END) sw = 1
     else if (it >= WAVE_END && it < WAVE_END + SWIVEL_BACK) sw = 1 - easeInOut((it - WAVE_END) / SWIVEL_BACK)
+    // leaving for the lab: he swivels round to face you first (reference beat)
+    if (v > 0) sw = Math.max(sw, easeOut(clamp01(v / TURN)))
     if (swivel.current) {
       swivel.current.rotation.set(wob, THREE.MathUtils.lerp(FACE_DESK, FACE_CAMERA, sw), -wob)
     }
     // the chair bounces away with the room during the fall
     if (chairRoot.current) {
-      const k = 1 - backIn(clamp01(v / 0.4))
+      const k = bounceScale(v, 1)
       chairRoot.current.visible = k > 0.002
       chairRoot.current.scale.setScalar(Math.max(k, 0.002))
     }
 
-    r.scared = it < DROP + 0.2
-    if (it < SWIVEL_OUT[0]) r.mode = it < DROP ? 'rest' : 'type'
+    r.scared = it < DROP + 0.2 || v > 0
+    if (v > 0) r.mode = 'rest'
+    else if (it < SWIVEL_OUT[0]) r.mode = it < DROP ? 'rest' : 'type'
     else if (it < WAVE_END + 0.1) r.mode = sw > 0.55 ? 'wave' : 'rest'
     else if (reduced) r.mode = 'type'
     else {
@@ -173,13 +180,11 @@ export default function Traveler({ reduced }: { reduced: boolean }) {
     }
 
     /* ── page 1 → 2: the fall ───────────────────────────────── */
-    const f = clamp01((v - 0.03) / 0.9)
-    const hop = Math.sin(clamp01(f / 0.22) * Math.PI) * 0.7 * (f < 0.22 ? 1 : 0)
-    const y = THREE.MathUtils.lerp(SEAT_Y, LAND_Y, easeInOut(f)) + hop
+    const c = moveProgress(v)
+    const y = THREE.MathUtils.lerp(SEAT_Y, LAND_Y, clamp01(c * 1.08)) // he reaches the tube just before the camera settles
     if (faller.current) {
       faller.current.position.y = y
-      // turns to face us as he leaves the chair (like the reference), then holds
-      faller.current.rotation.y = FACE_DESK + easeOut(clamp01(f / 0.3)) * (Math.PI * 2 - FACE_DESK + (FACE_CAMERA + FACE_LAB_CAMERA) / 2)
+      faller.current.rotation.y = THREE.MathUtils.lerp(FACE_CAMERA, FACE_LAB_CAMERA, c)
     }
     if (scan.current) {
       scan.current.visible = stage === 'fall' && y < WIRE_Y && y + H > WIRE_Y
@@ -193,9 +198,11 @@ export default function Traveler({ reduced }: { reduced: boolean }) {
     }
 
     /* ── page 2: floating in the tube ───────────────────────── */
+    // just landed: arms still up for a beat, then he settles (reference "water idle")
+    holoRig.current.mode = now - S.landedAt < 0.55 ? 'fall' : 'float'
     if (floater.current) {
-      floater.current.position.y = LAND_Y + (reduced ? 0 : Math.sin(now * 1.1) * 0.12)
-      floater.current.rotation.set(reduced ? 0 : Math.sin(now * 0.7) * 0.05, FACE_LAB_CAMERA + (reduced ? 0 : Math.sin(now * 0.4) * 0.12), reduced ? 0 : Math.sin(now * 0.9) * 0.04)
+      floater.current.position.y = LAND_Y + (reduced ? 0 : 0.03 + Math.sin(now * 1.1) * 0.03)
+      floater.current.rotation.set(reduced ? 0 : Math.sin(now * 0.7) * 0.02, FACE_LAB_CAMERA + (reduced ? 0 : Math.sin(now * 0.4) * 0.06), reduced ? 0 : Math.sin(now * 0.9) * 0.02)
     }
   })
 
@@ -218,14 +225,14 @@ export default function Traveler({ reduced }: { reduced: boolean }) {
       </sprite>
 
       {stage === 'fall' && (
-        <group ref={faller} position={[0, SEAT_Y, LAB_Z]} scale={1.18}>
+        <group ref={faller} position={[0, SEAT_Y, LAB_Z]} scale={SCALE}>
           <Character pose="stand" rig={fallRig} still={reduced} clip={clayClip} />
           <Character pose="stand" rig={fallRig} still={reduced} holo clip={holoClip} />
         </group>
       )}
 
       {stage === 'float' && (
-        <group ref={floater} position={[0, LAND_Y, LAB_Z]} scale={1.18}>
+        <group ref={floater} position={[0, LAND_Y, LAB_Z]} scale={SCALE}>
           <Character pose="stand" holo rig={holoRig} still={reduced} />
         </group>
       )}
