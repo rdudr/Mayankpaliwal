@@ -115,7 +115,7 @@ export default function About() {
               <dl className="hud-inner grid grid-cols-[1.5fr_1fr_1fr] gap-3 px-4 py-4 sm:px-5">
                 {[
                   ['Name', profile.firstName],
-                  ['Since', String(profile.since)],
+                  ['Age', String(profile.age)],
                   ['From', profile.from],
                 ].map(([k, v]) => (
                   <div key={k} className="min-w-0">

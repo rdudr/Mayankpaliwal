@@ -13,6 +13,7 @@ export const profile = {
   oneLiner: 'I edit long-form stories people actually finish watching.',
   yearsLabel: '5+ years',
   since: 2021,
+  age: 24,
   from: 'India',
   email: 'mayankpaliwalbusiness@gmail.com',
   phone: '+91 7014286214',

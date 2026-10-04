@@ -3,12 +3,9 @@ import { profile } from '../content/site'
 import { useReducedMotion } from '../lib/hooks'
 import { goTo } from '../lib/pager'
 import { blip } from '../lib/sound'
-import { useReel } from './Reel'
-import { Icon } from './ui'
 
 export default function Home({ ready }: { ready: boolean }) {
   const reduced = useReducedMotion()
-  const reel = useReel()
   const rise = (d: number) => ({
     initial: reduced ? false : { opacity: 0, y: 40 },
     animate: ready ? { opacity: 1, y: 0 } : {},
@@ -36,15 +33,6 @@ export default function Home({ ready }: { ready: boolean }) {
           <motion.div className="mt-10 flex flex-wrap items-center gap-4" {...rise(0.46)}>
             <button onClick={() => (blip('click'), goTo('contact'))} className="btn-orange h-14 px-9 text-[1.05rem]">
               Get in touch
-            </button>
-            <button
-              onClick={reel.open}
-              className="group inline-flex h-14 items-center gap-3 rounded-[13px] px-2 font-semibold text-navy"
-            >
-              <span className="grid size-11 place-items-center rounded-full bg-navy text-white transition-transform group-hover:scale-110">
-                <Icon.play className="ml-0.5 size-4" />
-              </span>
-              Watch reel
             </button>
           </motion.div>
         </div>
