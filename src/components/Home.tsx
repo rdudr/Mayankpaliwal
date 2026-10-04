@@ -17,11 +17,11 @@ export default function Home({ ready }: { ready: boolean }) {
       {/* Mobile: soft cream behind the text, scene shows below (like the reference) */}
       <div className="absolute inset-x-0 top-0 h-[60%] bg-gradient-to-b from-cream via-cream/80 to-transparent md:hidden" aria-hidden />
       <div className="content-width relative flex h-full flex-col justify-start pt-[18svh] md:justify-center md:pt-0">
-        <div className="max-w-[560px] md:max-w-[45%]">
-          <h1 className="text-[clamp(2.6rem,6.2vw,4.4rem)] font-semibold leading-[1.12] tracking-[-0.02em] text-navy">
-            <motion.span className="block" {...rise(0.1)}>Hi, my name</motion.span>
+        <div className="max-w-[560px] md:max-w-[50%]">
+          <h1 className="text-[clamp(2.3rem,5vw,4.4rem)] font-semibold leading-[1.12] tracking-[-0.02em] text-navy md:whitespace-nowrap">
+            <motion.span className="block" {...rise(0.1)}>Hi, My Name</motion.span>
             <motion.span className="block" {...rise(0.2)}>
-              is {profile.firstName}.
+              is {profile.name}!
             </motion.span>
           </h1>
           <motion.p className="mt-4 text-[1.05rem] text-slate sm:text-lg" {...rise(0.32)}>

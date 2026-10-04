@@ -23,7 +23,7 @@ type Shot = {
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z)
 const shots: Shot[] = [
-  { pos: v(4.4, 3.9, 5.9), target: v(0.2, 1.7, -0.2), sx: -0.2, sy: -0.2, mz: 1 },
+  { pos: v(4.4, 3.9, 5.9), target: v(0.2, 1.7, -0.2), sx: -0.2, sy: -0.27, mz: 1 },
   { pos: v(2.9, LAB_Y + 2.3, LAB_Z + 6.7), target: v(0.25, LAB_Y + 1.85, LAB_Z), sx: -0.2, sy: 0.12, mz: 1.3 },
   { pos: v(CONTACT_X + 4.6, 3.6, 7.2), target: v(CONTACT_X, 1.55, 0), sx: -0.22, sy: -0.22, mz: 1 },
 ]

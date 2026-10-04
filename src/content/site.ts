@@ -9,8 +9,8 @@ export type Client = 'raj-shamani' | 'beerbiceps' | 'daud' | 'freelance'
 export const profile = {
   name: 'Mayank Paliwal',
   firstName: 'Mayank',
-  roles: ['Video Editor', 'Filmmaker', 'Storyteller'],
-  oneLiner: 'I edit long-form stories people actually finish watching.',
+  roles: ['Video Editor', 'Motion Designer', 'Filmmaker', 'Storyteller'],
+  oneLiner: 'Doing what I love',
   yearsLabel: '5+ years',
   since: 2021,
   age: 24,
