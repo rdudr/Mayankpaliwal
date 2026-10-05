@@ -58,8 +58,10 @@ const MODELS = {
     } as Record<string, string>,
   },
 }
-const CFG = __HAS_PORTFOLIO_MODEL__ ? MODELS.portfolio : MODELS.jake
-export const PORTFOLIO: boolean = __HAS_PORTFOLIO_MODEL__
+// Set by vite.config.ts at build time. A dev server started before that setting existed has no
+// value yet, so in dev assume the local-only reference files are there.
+export const PORTFOLIO: boolean = typeof __HAS_PORTFOLIO_MODEL__ !== 'undefined' ? __HAS_PORTFOLIO_MODEL__ : import.meta.env.DEV
+const CFG = PORTFOLIO ? MODELS.portfolio : MODELS.jake
 useGLTF.preload(CFG.url)
 
 /** Height of his hip joints when seated (chair seat top is ~0.12 below). */
