@@ -6,11 +6,3 @@ dist
 *.local
 Resume Videos/
 
-# Reference-repo assets (no licence yet) — keep out of git until Yash confirms in writing
-public/ref/
-public/textures/
-public/models/character/
-public/models/room/
-public/models/lab/
-public/models/contact/
-src/scene/ref/
