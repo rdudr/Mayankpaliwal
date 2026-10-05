@@ -14,6 +14,23 @@ import { shown } from './textures'
  * Poses are made by aiming limbs in code, so any rigged human works.
  */
 const MODELS = {
+  portfolio: {
+    isPortfolio: true,
+    url: '/models/character/model.glb',
+    palmRest: [0, -1, 0] as [number, number, number],
+    palmRestL: [0, -1, 0] as [number, number, number],
+    idle: 'idle' as string | undefined,
+    fixedScale: 0.495,
+    fixedSitDrop: 0.48,
+    fixedStandDrop: -1.05,
+    bones: {
+      UpperArmL: 'leftArmBone', LowerArmL: 'leftForeArmBone',
+      UpperArmR: 'rightarmBone', LowerArmR: 'rightForearmBone',
+      UpperLegL: 'leftUpLegBone', LowerLegL: 'leftLegBone',
+      UpperLegR: 'rightUpLegBone', LowerLegR: 'rightLegBone',
+      head: 'headBone', wristR: 'rightHandBone', wristL: 'leftHandBone',
+    } as Record<string, string>,
+  },
   jake: {
     url: '/models/jake.glb',
     /** Right palm direction in the rest pose (T-pose: palms face down). */
@@ -41,11 +58,14 @@ const MODELS = {
     } as Record<string, string>,
   },
 }
-const CFG = MODELS.jake
+const CFG = MODELS.portfolio
+const PORTFOLIO: boolean = 'isPortfolio' in CFG
 useGLTF.preload(CFG.url)
 
 /** Height of his hip joints when seated (chair seat top is ~0.12 below). */
 const SEAT_HIP = 0.76
+/** Portfolio rig: hip-joint height (chair-space) when seated; the seat top is 0.78. */
+const SEAT_HIP_PORTFOLIO = 0.9
 
 /** Height (in scene units) the character is scaled to, standing. */
 const TARGET_HEIGHT = 2.05
@@ -91,6 +111,14 @@ const v = (x: number, y: number, z: number) => [x, y, z] as [number, number, num
 function targetDirs(mode: CharRig['mode'], sitting: boolean, t: number): Dirs {
   const d: Dirs = {}
   const s = Math.sin
+  if (PORTFOLIO) {
+    // this rig plays its own clips (see clipFor); only the seated wave needs aimed arms
+    if (mode === 'wave' && sitting) {
+      d.UpperArmR = v(-0.75, 0.6, 0.2)
+      d.LowerArmR = v(-0.1 + s(t * 7) * 0.45, 1, 0.15)
+    }
+    return d
+  }
   if (sitting) {
     d.UpperLegL = v(0.06, -0.12, 1)
     d.UpperLegR = v(-0.06, -0.12, 1)
@@ -156,13 +184,13 @@ function headTarget(mode: CharRig['mode'], t: number): [number, number] {
   // [yaw, pitch] in radians
   switch (mode) {
     case 'type':
-      return [Math.sin(t * 0.6) * 0.08, 0.22]
+      return [Math.sin(t * 0.6) * 0.08, PORTFOLIO ? -0.12 : 0.22]
     case 'fast':
-      return [0.42, 0.18] // toward the timeline monitor (his left)
+      return [0.42, PORTFOLIO ? -0.1 : 0.18] // toward the timeline monitor (his left)
     case 'mouse':
-      return [-0.32, 0.2] // toward the Program monitor (his right)
+      return [-0.32, PORTFOLIO ? -0.1 : 0.2] // toward the Program monitor (his right)
     case 'wave':
-      return [0, -0.05]
+      return [0, PORTFOLIO ? -0.38 : -0.05] // the seated clip looks down at the screen; lift the gaze to the viewer
     case 'fall':
       return [0, -0.25]
     case 'float':
@@ -170,6 +198,44 @@ function headTarget(mode: CharRig['mode'], t: number): [number, number] {
     default:
       return [Math.sin(t * 0.6) * 0.15, 0]
   }
+}
+
+/**
+ * The arm meshes are one piece (sleeve + hand). Split their triangles into two material
+ * groups by skinning: triangles bound to the hand/finger bones get group 1 (skin).
+ */
+function splitHands(m: THREE.SkinnedMesh) {
+  const g = m.geometry
+  if (g.userData.handsSplit || !g.index || !m.skeleton) return
+  const si = g.attributes.skinIndex
+  const sw = g.attributes.skinWeight
+  const isHandBone = m.skeleton.bones.map((b) => /hand/i.test(b.name))
+  const handV = (i: number) => {
+    let w = 0
+    for (let k = 0; k < 4; k++) if (isHandBone[si.getComponent(i, k)]) w += sw.getComponent(i, k)
+    return w > 0.5
+  }
+  const idx = g.index.array
+  const sleeve: number[] = []
+  const hand: number[] = []
+  for (let i = 0; i < idx.length; i += 3) {
+    const n = +handV(idx[i]) + +handV(idx[i + 1]) + +handV(idx[i + 2])
+    ;(n >= 2 ? hand : sleeve).push(idx[i], idx[i + 1], idx[i + 2])
+  }
+  g.setIndex([...sleeve, ...hand])
+  g.clearGroups()
+  g.addGroup(0, sleeve.length, 0)
+  g.addGroup(sleeve.length, hand.length, 1)
+  g.userData.handsSplit = true
+}
+
+/** Which of the model's own clips to play (portfolio rig). */
+function clipFor(mode: CharRig['mode'], sitting: boolean) {
+  if (sitting) return 'idle'
+  if (mode === 'fall') return 'fall-down'
+  if (mode === 'float') return 'water-idle'
+  if (mode === 'wave') return 'wave'
+  return 'standing-idle'
 }
 
 // scratch objects
@@ -264,6 +330,31 @@ function makeGlasses(head: THREE.Object3D, eyeL: THREE.Object3D, eyeR: THREE.Obj
   return g
 }
 
+/** The face texture has eyes, brows and a mouth but no nose: a small skin-coloured bump on the head bone. */
+function addNose(model: THREE.Object3D, head: THREE.Object3D) {
+  const face = model.getObjectByName('face')
+  if (!face) return
+  model.updateWorldMatrix(true, true)
+  const box = new THREE.Box3().setFromObject(face)
+  const size = box.getSize(new THREE.Vector3())
+  const c = box.getCenter(new THREE.Vector3())
+  // the face shell is thin across its front-to-back axis; the front is the side away from the neck
+  const away = c.clone().sub(head.getWorldPosition(new THREE.Vector3()))
+  away.y = 0
+  const alongX = size.x < size.z
+  const dir = alongX ? new THREE.Vector3(Math.sign(away.x) || 1, 0, 0) : new THREE.Vector3(0, 0, Math.sign(away.z) || 1)
+  const width = alongX ? size.z : size.x
+  const r = width * 0.05
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), new THREE.MeshBasicMaterial({ color: '#e8a981' }))
+  nose.name = 'nose'
+  nose.scale.set(1, 0.9, 1.1)
+  const pos = c.clone().addScaledVector(dir, (alongX ? size.x : size.z) / 2 + r * 0.2)
+  pos.y -= size.y * 0.02
+  nose.position.copy(head.worldToLocal(pos))
+  nose.frustumCulled = false
+  head.add(nose)
+}
+
 const _S = new THREE.Vector3()
 const _E = new THREE.Vector3()
 const _W = new THREE.Vector3()
@@ -296,24 +387,76 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
   const model = useMemo(() => clone(scene), [scene])
   const root = useRef<THREE.Group>(null)
 
+  const textures = useMemo(() => {
+    const loader = new THREE.TextureLoader()
+    const shirt = loader.load('/textures/matcaps/shirt.jpg')
+    const pants = loader.load('/textures/matcaps/pants.jpg')
+    const skin = loader.load('/textures/matcaps/skin.jpg')
+    const white = loader.load('/textures/matcaps/white.jpg')
+    const head = loader.load('/models/character/head-baked.jpg')
+    head.flipY = false
+    head.colorSpace = THREE.SRGBColorSpace
+    const faceDefault = loader.load('/models/character/faces/smile/1.png')
+    faceDefault.colorSpace = THREE.SRGBColorSpace
+    const faceBlink = loader.load('/models/character/faces/blink-0.png')
+    faceBlink.colorSpace = THREE.SRGBColorSpace
+    const faceScared = loader.load('/models/character/faces/scared.png')
+    faceScared.colorSpace = THREE.SRGBColorSpace
+    return { shirt, pants, skin, white, head, faceDefault, faceBlink, faceScared }
+  }, [])
+
+  const mats = useMemo(() => {
+    return {
+      shirtMat: new THREE.MeshMatcapMaterial({ color: '#ff923e', matcap: textures.shirt, clippingPlanes: clip ?? undefined }),
+      pantsMat: new THREE.MeshMatcapMaterial({ color: '#1e293b', matcap: textures.pants, clippingPlanes: clip ?? undefined }),
+      skinMat: new THREE.MeshMatcapMaterial({ color: '#f5c29b', matcap: textures.skin, clippingPlanes: clip ?? undefined }),
+      hairMat: new THREE.MeshMatcapMaterial({ color: '#2d241e', matcap: textures.skin, clippingPlanes: clip ?? undefined }),
+      whiteMat: new THREE.MeshMatcapMaterial({ color: '#ffffff', matcap: textures.white, clippingPlanes: clip ?? undefined }),
+      headMat: new THREE.MeshBasicMaterial({ map: textures.head, clippingPlanes: clip ?? undefined }),
+      faceMat: new THREE.MeshBasicMaterial({ map: textures.faceDefault, transparent: true, depthWrite: false, clippingPlanes: clip ?? undefined }),
+    }
+  }, [textures, clip])
+
   // materials: own copies per instance (clipping differs), or the hologram wireframe
   useEffect(() => {
     const holoMat = new THREE.MeshBasicMaterial({ color: '#5fd2ff', wireframe: true, transparent: true, opacity: 0.45, depthWrite: false, clippingPlanes: clip })
     model.traverse((o) => {
       const m = o as THREE.Mesh
       if (!m.isMesh) return
-      m.castShadow = false
+      m.castShadow = true
+      m.receiveShadow = true
       m.frustumCulled = false
       if (holo) m.material = holoMat
-      else {
+      else if (PORTFOLIO && CFG.isPortfolio) {
+        const parentName = m.parent?.name && m.parent.name.toLowerCase() !== 'armature' ? m.parent.name : ''
+        const n = (m.name + ' ' + parentName).toLowerCase()
+        if (n.includes('chest') || n.includes('shoulder') || n.includes('arm-') || n.includes('arm_') || n.includes('arm.')) {
+          if (m.name.toLowerCase().startsWith('arm') && (m as THREE.SkinnedMesh).isSkinnedMesh) {
+            splitHands(m as THREE.SkinnedMesh)
+            m.material = [mats.shirtMat, mats.skinMat]
+          } else m.material = mats.shirtMat
+        } else if (n.includes('sock') || n.includes('shoe-white')) {
+          m.material = mats.whiteMat
+        } else if (n.includes('pant') || n.includes('shoe')) {
+          m.material = mats.pantsMat
+        } else if (n.includes('head')) {
+          m.material = mats.headMat
+        } else if (n.includes('face')) {
+          m.material = mats.faceMat
+        } else {
+          m.material = mats.skinMat
+        }
+      } else {
         const src = m.material as THREE.MeshStandardMaterial
-        const mat = src.clone()
-        mat.clippingPlanes = clip ?? null
-        if (!m.userData.glasses) mat.roughness = Math.max(mat.roughness, 0.6)
-        m.material = mat
+        if (src) {
+          const mat = src.clone()
+          mat.clippingPlanes = clip ?? null
+          if (!m.userData.glasses) mat.roughness = Math.max(mat.roughness, 0.6)
+          m.material = mat
+        }
       }
     })
-  }, [model, holo, clip])
+  }, [model, holo, clip, mats])
 
   const bones = useMemo(() => {
     const get = (n: string) => model.getObjectByName(n)!
@@ -329,11 +472,17 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
     const palm = local(CFG.palmRest, map.wristR)
     const palmL = local(CFG.palmRestL, map.wristL)
     if (map.eyeL && map.eyeR) map.head.add(makeGlasses(map.head, map.eyeL, map.eyeR))
-    return { ...map, axes, rest, palm, palmL }
+    if (PORTFOLIO) addNose(model, map.head)
+    const idx1R = model.getObjectByName('rightHandIndex1Bone')
+    const idx2R = model.getObjectByName('rightHandIndex2Bone')
+    return { ...map, axes, rest, palm, palmL, idx1R, idx2R }
   }, [model])
 
   // size: scale to TARGET_HEIGHT; when sitting, drop him so his hip joints sit on the seat
   const { scale, sitDrop, standDrop } = useMemo(() => {
+    if ('fixedScale' in CFG && typeof CFG.fixedScale === 'number') {
+      return { scale: CFG.fixedScale, sitDrop: (CFG as any).fixedSitDrop ?? 0, standDrop: (CFG as any).fixedStandDrop ?? 0 }
+    }
     model.updateWorldMatrix(true, true)
     const box = new THREE.Box3().setFromObject(model)
     const scale = TARGET_HEIGHT / (box.max.y - box.min.y)
@@ -344,7 +493,7 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
   // breathing idle from the model's own animation
   const mixer = useMemo(() => new THREE.AnimationMixer(model), [model])
   useEffect(() => {
-    const idle = CFG.idle ? THREE.AnimationClip.findByName(animations, CFG.idle) : undefined
+    const idle = CFG.idle && !(PORTFOLIO) ? THREE.AnimationClip.findByName(animations, CFG.idle) : undefined
     if (idle) mixer.clipAction(idle).play()
     return () => void mixer.stopAllAction()
   }, [mixer, animations])
@@ -357,16 +506,68 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
   const cur = useRef<Partial<Record<Limb, THREE.Vector3>>>({})
   const head = useRef<[number, number]>([0, 0])
 
+  const clipName = useRef('')
+
+  /**
+   * Line the posed rig up with the scene: turn it to face +z, centre its hips on the group's
+   * origin, then seat the hips on the chair (sitting) or stand the soles on y = 0.
+   */
+  const calibrate = () => {
+    const g = root.current
+    if (!g) return
+    const toRoot = (o: THREE.Object3D) => g.worldToLocal(o.getWorldPosition(new THREE.Vector3()))
+    model.quaternion.identity()
+    model.position.set(0, 0, 0)
+    g.updateWorldMatrix(true, true)
+    // forward = from the head bone toward the face mesh (more reliable than rig left/right naming)
+    const face = model.getObjectByName('face') as THREE.Mesh | undefined
+    const fwd = new THREE.Vector3(0, 0, 1)
+    if (face?.geometry) {
+      face.geometry.computeBoundingBox()
+      const c = face.localToWorld(face.geometry.boundingBox!.getCenter(new THREE.Vector3()))
+      const d = g.worldToLocal(c).sub(toRoot(bones.head))
+      d.y = 0
+      if (d.lengthSq() > 1e-6) fwd.copy(d.normalize())
+    }
+    model.quaternion.setFromUnitVectors(fwd.negate(), new THREE.Vector3(0, 0, 1))
+    g.updateWorldMatrix(true, true)
+    const hips = toRoot(bones.UpperLegL).add(toRoot(bones.UpperLegR)).multiplyScalar(0.5)
+    model.position.x = -hips.x
+    model.position.z = -hips.z
+    if (pose === 'sit') {
+      model.position.y = SEAT_HIP_PORTFOLIO / scale - hips.y
+    } else {
+      const toes = [model.getObjectByName('leftToeBaseBone')!, model.getObjectByName('rightToeBaseBone')!]
+      g.updateWorldMatrix(true, true)
+      model.position.y = 0.06 - Math.min(...toes.map((o) => toRoot(o).y))
+    }
+  }
+
   useFrame(({ clock }, dt) => {
     if (!shown(root.current)) return // off-screen: skip animation + IK work
     const t = clock.elapsedTime
+    const mode: CharRig['mode'] = rig ? rig.current.mode : armsUp ? 'fall' : wave ? 'wave' : typing ? 'type' : 'rest'
+    if (PORTFOLIO) {
+      const name = clipFor(mode, pose === 'sit')
+      if (clipName.current !== name) {
+        clipName.current = name
+        const clip = THREE.AnimationClip.findByName(animations, name)
+        if (clip) {
+          mixer.stopAllAction()
+          mixer.clipAction(clip).reset().play()
+          mixer.update(0)
+          calibrate()
+        }
+      }
+    }
+    const restHead = bones.rest.get(bones.head)
+    if (restHead) bones.head.quaternion.copy(restHead) // clips without a head track would otherwise accumulate the look offset
     if (CFG.idle) mixer.update(still ? 0 : Math.min(dt, 0.05))
     else for (const [bone, q] of bones.rest) bone.quaternion.copy(q)
-
-    const mode: CharRig['mode'] = rig ? rig.current.mode : armsUp ? 'fall' : wave ? 'wave' : typing ? 'type' : 'rest'
     const dirs = targetDirs(mode, pose === 'sit', still ? 0 : t)
     model.updateWorldMatrix(true, true)
-    model.getWorldQuaternion(_mq)
+    if (PORTFOLIO) root.current!.getWorldQuaternion(_mq)
+    else model.getWorldQuaternion(_mq)
     const k = 1 - Math.exp(-12 * dt)
 
     for (const limb of LIMBS) {
@@ -399,17 +600,41 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
       }
     } else ik.current = {}
 
+    if (PORTFOLIO && mode === 'mouse') {
+      // right index finger rests on the mouse button and clicks
+      const click = Math.max(0, Math.sin(t * 6.2)) * 0.25
+      const fingers = [bones.idx1R, bones.idx2R]
+      const dirsF = [v(0, -0.5 - click, 1), v(0, -0.95 - click, 1)]
+      fingers.forEach((f, i) => {
+        if (!f) return
+        _dir.set(...dirsF[i]).normalize().applyQuaternion(_mq)
+        aim(f, boneAxis(f), _dir)
+      })
+    }
+
     if (mode === 'wave') {
       // palm toward whoever he's waving at (his forward, slightly up)
       _f.set(0, 0.25, 1).applyQuaternion(_mq).normalize()
       facePalm(bones.LowerArmR, bones.axes.get('LowerArmR')!, bones.wristR, bones.palm, _f.clone())
     }
 
+    const targetFace = r?.scared ? textures.faceScared : r?.blink ? textures.faceBlink : textures.faceDefault
+    if (mats.faceMat.map !== targetFace) {
+      mats.faceMat.map = targetFace
+      mats.faceMat.needsUpdate = true
+    }
+
     const [ty, tp] = headTarget(mode, still ? 0 : t)
     head.current[0] += (ty - head.current[0]) * (1 - Math.exp(-6 * dt))
     head.current[1] += (tp - head.current[1]) * (1 - Math.exp(-6 * dt))
     _e.set(head.current[1], head.current[0], 0)
-    bones.head.quaternion.multiply(_q.setFromEuler(_e))
+    if (PORTFOLIO) {
+      // this rig's bone axes are turned, so apply the look in character space (pitch + = down)
+      _q.setFromEuler(_e)
+      _q2.copy(_mq).multiply(_q).multiply(_pq.copy(_mq).invert()) // look as a world-space rotation
+      bones.head.parent!.getWorldQuaternion(_pq)
+      bones.head.quaternion.premultiply(_pq.clone().invert().multiply(_q2).multiply(_pq))
+    } else bones.head.quaternion.multiply(_q.setFromEuler(_e))
 
     if (import.meta.env.DEV && trackHand) {
       const w = (o: THREE.Object3D) => o.getWorldPosition(new THREE.Vector3()).toArray().map((n) => +n.toFixed(3))
@@ -428,7 +653,7 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
 
   return (
     <group {...group}>
-      <group ref={root} position={[0, pose === 'sit' ? sitDrop : standDrop, 0]} scale={scale}>
+      <group ref={root} position={[0, PORTFOLIO ? 0 : pose === 'sit' ? sitDrop : standDrop, 0]} scale={scale}>
         <primitive object={model} />
       </group>
     </group>

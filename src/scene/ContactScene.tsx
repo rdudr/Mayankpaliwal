@@ -41,7 +41,7 @@ function Envelope({ i, reduced }: { i: number; reduced: boolean }) {
     s.closePath()
     return new THREE.ShapeGeometry(s)
   }, [])
-  const seed = useMemo(() => ({ x: -2.2 + ((i * 1.37) % 4.4), z: -0.4 + ((i * 0.71) % 1.6), sp: 0.25 + (i % 3) * 0.08, ph: i * 0.37, spin: (i % 2 ? 1 : -1) * (0.4 + (i % 4) * 0.15) }), [i])
+  const seed = useMemo(() => ({ x: -2.2 + ((i * 1.37) % 4.4), z: -1.9 + ((i * 0.71) % 1.1), sp: 0.25 + (i % 3) * 0.08, ph: i * 0.37, spin: (i % 2 ? 1 : -1) * (0.4 + (i % 4) * 0.15) }), [i])
 
   useFrame(({ clock }) => {
     const g = ref.current
@@ -74,7 +74,7 @@ export default function ContactScene({ reduced }: { reduced: boolean }) {
       <Parcel size={[1.1, 0.8, 0.9]} position={[0.05, 1.4, -0.05]} rotation={[0, 0.25, 0]} />
       <Parcel size={[0.7, 0.5, 0.6]} position={[1.25, 0.25, 0.65]} rotation={[0, -0.45, 0]} />
       <Parcel size={[0.55, 0.4, 0.5]} position={[-1.2, 0.2, 0.75]} rotation={[0, 0.5, 0]} />
-      <Character pose="sit" wave={!reduced} still={reduced} position={[0.05, 1.27, 0.08]} rotation={[0, 0.25, 0]} />
+      <Character pose="sit" wave={!reduced} still={reduced} position={[0.05, 1.02, 0.08]} rotation={[0, 0.25, 0]} />
       {Array.from({ length: 8 }, (_, i) => (
         <Envelope key={i} i={i} reduced={reduced} />
       ))}

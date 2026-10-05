@@ -10,8 +10,8 @@ import { makeCanvas, rr } from './textures'
 type Stage = 'sit' | 'fall' | 'float'
 
 const SEAT_Y = 0.66 // standing on the chair seat at the moment he jumps
-const LAND_Y = LAB_Y + 0.42 // standing on the tube floor, head just under the cap (like the reference)
-const SCALE = 1.25
+const LAND_Y = LAB_Y + 1.25 // standing floating inside the tube
+const SCALE = 1.05
 const H = 2.25 * SCALE // his height at hologram scale
 const CHAIR = new THREE.Vector3(0, 0, 0.4)
 const FACE_DESK = Math.PI
@@ -230,7 +230,7 @@ export default function Traveler({ reduced }: { reduced: boolean }) {
           <Chair rotation={[0, -Math.PI, 0]} />
           {stage === 'sit' && (
             <group ref={drop}>
-              <Character pose="sit" rig={rig} still={reduced} trackHand position={[0, 0.25, 0.1]} />
+              <Character pose="sit" rig={rig} still={reduced} trackHand position={[0, 0, 0]} />
             </group>
           )}
         </group>
