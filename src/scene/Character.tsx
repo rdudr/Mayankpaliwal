@@ -58,8 +58,8 @@ const MODELS = {
     } as Record<string, string>,
   },
 }
-const CFG = MODELS.portfolio
-const PORTFOLIO: boolean = 'isPortfolio' in CFG
+const CFG = __HAS_PORTFOLIO_MODEL__ ? MODELS.portfolio : MODELS.jake
+export const PORTFOLIO: boolean = __HAS_PORTFOLIO_MODEL__
 useGLTF.preload(CFG.url)
 
 /** Height of his hip joints when seated (chair seat top is ~0.12 below). */
@@ -427,7 +427,7 @@ export default function Character({ pose, holo, typing, wave, still, armsUp, cli
       m.receiveShadow = true
       m.frustumCulled = false
       if (holo) m.material = holoMat
-      else if (PORTFOLIO && CFG.isPortfolio) {
+      else if (PORTFOLIO) {
         const parentName = m.parent?.name && m.parent.name.toLowerCase() !== 'armature' ? m.parent.name : ''
         const n = (m.name + ' ' + parentName).toLowerCase()
         if (n.includes('chest') || n.includes('shoulder') || n.includes('arm-') || n.includes('arm_') || n.includes('arm.')) {

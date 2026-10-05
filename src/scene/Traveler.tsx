@@ -2,7 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { blip } from '../lib/sound'
-import Character, { newRig } from './Character'
+import Character, { newRig, PORTFOLIO } from './Character'
 import { bounceScale, clamp01, desk, easeIn, easeInOut, easeOut, intro, LAB_Y, LAB_Z, moveProgress, trans, TURN, WIRE_Y } from './progress'
 import { Chair } from './Room'
 import { makeCanvas, rr } from './textures'
@@ -10,7 +10,7 @@ import { makeCanvas, rr } from './textures'
 type Stage = 'sit' | 'fall' | 'float'
 
 const SEAT_Y = 0.66 // standing on the chair seat at the moment he jumps
-const LAND_Y = LAB_Y + 1.25 // standing floating inside the tube
+const LAND_Y = LAB_Y + (PORTFOLIO ? 1.25 : 1.45) // standing floating inside the tube // standing floating inside the tube
 const SCALE = 1.05
 const H = 2.25 * SCALE // his height at hologram scale
 const CHAIR = new THREE.Vector3(0, 0, 0.4)
